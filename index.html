@@ -1,0 +1,78 @@
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma de Filmes e Séries</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Tela de Login -->
+        <div id="login-page" class="page">
+            <div class="login-container">
+                <h1>Login</h1>
+                <form id="login-form">
+                    <div class="input-group">
+                        <label for="username">Usuário</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Senha</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit">Entrar</button>
+                    <p id="login-error" class="error-message"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Painel do Administrador -->
+        <div id="admin-panel" class="page" style="display: none;">
+            <div class="admin-layout">
+                <aside class="admin-sidebar">
+                    <h2>Admin</h2>
+                    <nav>
+                        <ul>
+                            <li><button data-page="admin-dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</button></li>
+                            <li><button data-page="admin-generate-client"><i class="fas fa-user-plus"></i> Gerar Clientes</button></li>
+                            <li><button data-page="admin-clients"><i class="fas fa-users"></i> Clientes</button></li>
+                            <li><button data-page="admin-add-movie"><i class="fas fa-film"></i> Add Filme</button></li>
+                            <li><button data-page="admin-add-series"><i class="fas fa-tv"></i> Add Série</button></li>
+                            <li><button data-page="admin-movies-list"><i class="fas fa-list"></i> Filmes</button></li>
+                            <li><button data-page="admin-series-list"><i class="fas fa-list"></i> Séries</button></li>
+                            <li><button data-page="admin-create-reseller"><i class="fas fa-user-tie"></i> Criar Revendedor</button></li>
+                            <li><button data-page="admin-config"><i class="fas fa-cog"></i> Configurar</button></li>
+                        </ul>
+                    </nav>
+                    <button id="admin-logout-btn"><i class="fas fa-sign-out-alt"></i> Sair</button>
+                </aside>
+                <main id="admin-content" class="admin-main">
+                    <!-- Conteúdo dinâmico do admin aqui -->
+                </main>
+            </div>
+        </div>
+
+        <!-- Painel do Cliente -->
+        <div id="client-panel" class="page" style="display: none;">
+            <header class="client-header">
+                <div class="logo">MeuFlix</div>
+                <nav>
+                    <button data-page="client-movies">Filmes</button>
+                    <button data-page="client-series">Séries</button>
+                </nav>
+                 <div class="search-container">
+                    <input type="search" id="search-input" placeholder="Buscar...">
+                    <button id="search-btn"><i class="fas fa-search"></i></button>
+                </div>
+                <button id="client-logout-btn">Sair</button>
+            </header>
+            <main id="client-content" class="client-main">
+                <!-- Conteúdo dinâmico do cliente aqui -->
+            </main>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
