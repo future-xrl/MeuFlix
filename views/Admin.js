@@ -216,12 +216,24 @@ function renderAddSeries(container, seriesToEdit = null) {
 function renderBackup(container) {
     const content = `
         <div class="card">
-            <h2 class="card-title">Exportar Banco de Dados</h2>
-            <p>Faça o download de todos os seus dados como um arquivo JSON. Este é o arquivo que deve ser enviado para o GitHub.</p>
-            <p style="margin-top: 0.5rem; color: var(--text-muted-color);">
-                <strong>Instruções:</strong> Para que novos usuários e conteúdos fiquem disponíveis para todos, exporte o banco, substitua o arquivo <code>cinemaDB.json</code> no <a href="https://github.com/Future-XRL/MeuFlix" target="_blank">repositório do GitHub</a> e faça o commit das alterações.
+            <h2 class="card-title">Publicar Alterações no GitHub</h2>
+            <p>
+                Após fazer alterações (gerar clientes, adicionar filmes, etc.), publique o banco de dados diretamente no GitHub para que as mudanças fiquem disponíveis para todos os usuários.
             </p>
-            <button id="export-btn" class="btn btn-primary" style="margin-top: 10px;">Exportar Banco (cinemaDB.json)</button>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label for="github-token">Token de Acesso Pessoal do GitHub</label>
+                <input type="password" id="github-token" class="form-control" placeholder="Cole seu token aqui">
+                <small style="color: var(--text-muted-color); display: block; margin-top: 0.5rem;">
+                    <!-- Para criar o token: Vá para https://github.com/settings/tokens, gere um novo token com escopo 'repo'. -->
+                    <strong>Como gerar um token:</strong> Vá em seu perfil do GitHub > Settings > Developer settings > Personal access tokens > Tokens (classic) > Generate new token. Dê um nome, defina uma data de expiração e selecione o escopo <code>repo</code>.
+                </small>
+            </div>
+            <button id="publish-btn" class="btn btn-primary">Publicar no GitHub</button>
+        </div>
+        <div class="card">
+            <h2 class="card-title">Exportar Banco de Dados (Backup Manual)</h2>
+            <p>Faça o download de todos os seus dados como um arquivo JSON. Use isso como um backup local.</p>
+            <button id="export-btn" class="btn btn-secondary" style="margin-top: 10px;">Exportar Banco (cinemaDB.json)</button>
         </div>
         <div class="card">
             <h2 class="card-title">Importar Banco de Dados</h2>
@@ -236,6 +248,8 @@ function renderBackup(container) {
         </div>
     `;
     renderLayout(container, content);
+
+    document.getElementById('publish-btn').addEventListener('click', handlePublishToGitHub);
 
     document.getElementById('export-btn').addEventListener('click', () => {
         exportDB();
@@ -266,6 +280,75 @@ function renderBackup(container) {
 
 
 // Handlers and Listeners
+
+/** @tweakable [GitHub repository configuration] */
+const GITHUB_CONFIG = {
+    owner: 'Future-XRL',
+    repo: 'MeuFlix',
+    path: 'cinemaDB.json',
+    branch: 'main'
+};
+
+async function handlePublishToGitHub() {
+    const token = document.getElementById('github-token').value;
+    if (!token) {
+        showToast('Por favor, insira o token do GitHub.', 'error');
+        return;
+    }
+
+    const apiUrl = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
+
+    try {
+        // 1. Get the current file to get its SHA
+        const response = await fetch(apiUrl, {
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+            },
+        });
+
+        if (!response.ok && response.status !== 404) {
+             const errorData = await response.json();
+             throw new Error(`Erro ao buscar o arquivo no GitHub: ${errorData.message}`);
+        }
+        const fileData = response.status === 404 ? { sha: null } : await response.json();
+
+
+        // 2. Prepare the new content
+        const db = getDB();
+        const newContent = JSON.stringify(db, null, 2);
+        
+        // Correctly encode to Base64 to handle UTF-8 characters
+        const newContentBase64 = btoa(unescape(encodeURIComponent(newContent)));
+        
+        // 3. Create or update the file
+        const updateResponse = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: 'Atualização do banco de dados via App',
+                content: newContentBase64,
+                sha: fileData.sha, // If SHA is null, GitHub creates a new file
+                branch: GITHUB_CONFIG.branch
+            }),
+        });
+        
+        if (updateResponse.ok) {
+            showToast('Banco de dados publicado com sucesso no GitHub!');
+        } else {
+            const errorData = await updateResponse.json();
+            throw new Error(`Erro ao publicar: ${errorData.message}`);
+        }
+
+    } catch (error) {
+        console.error('Erro na publicação para o GitHub:', error);
+        showToast(error.message || 'Erro ao publicar. Verifique o token e a conexão.', 'error');
+    }
+}
 
 function handleGenerateClient(e) {
     e.preventDefault();
