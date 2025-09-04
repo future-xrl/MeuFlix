@@ -8,22 +8,39 @@
     },
     "clients": [
       {
-        "username": "89392",
-        "password": "49564",
+        "username": "12345",
+        "password": "67890",
+        "description": "Cliente de Exemplo",
+        "createdAt": "2025-09-04T06:17:26.019Z",
+        "expiresAt": "2025-10-05T06:17:26.019Z",
+        "status": "válido",
+        "favorites": []
+      },
+      {
+        "username": "54321",
+        "password": "09876",
         "description": "teste",
-        "createdAt": "2025-09-02T23:08:56.538Z",
-        "expiresAt": "2025-10-03T23:08:56.538Z",
-        "status": "válido"
+        "createdAt": "2025-09-04T06:19:00.654Z",
+        "expiresAt": "2025-09-19T06:19:00.654Z",
+        "status": "ativo",
+        "name": "Dono",
+        "whatsapp": "19995309235",
+        "email": "",
+        "favorites": []
       }
-    ]
+    ],
+    "tests": []
   },
   "movies": [
     {
-      "id": "movie_1756854125377",
+      "id": "movie_1756966646019",
       "name": "Filme Exemplo",
       "description": "Esta é a descrição de um filme de exemplo para demonstração. A trama é sobre aventura e descobertas.",
       "cover": "https://via.placeholder.com/400x600.png/222/f5f5f5?text=Filme+Exemplo",
-      "link": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+      "link": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "category": "aventura",
+      "releaseYear": 2023,
+      "createdAt": "2023-10-26T10:00:00.000Z"
     },
     {
       "id": "movie_17569347626667qmp21dob",
@@ -35,10 +52,36 @@
   ],
   "series": [
     {
-      "id": "series_1756854125377",
+      "id": "series_1756966646019",
       "name": "Série Exemplo",
       "description": "Resumo da série de exemplo com uma temporada e um episódio.",
       "cover": "https://via.placeholder.com/400x600.png/222/f5f5f5?text=Série+Exemplo",
+      "category": "drama",
+      "releaseYear": 2022,
+      "createdAt": "2023-10-25T11:00:00.000Z",
+      "seasons": [
+        {
+          "seasonNumber": 1,
+          "episodes": [
+            {
+              "episodeNumber": 1,
+              "link": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "animes": [
+    {
+      "id": "anime_1756966646019",
+      "name": "Anime Exemplo",
+      "description": "Resumo do anime de exemplo com uma temporada e um episódio para demonstração.",
+      "cover": "https://via.placeholder.com/400x600.png/222/f5f5f5?text=Anime+Exemplo",
+      "category": "fantasia",
+      "releaseYear": 2024,
+      "createdAt": "2024-01-15T12:00:00.000Z",
+      "popularity": 85,
       "seasons": [
         {
           "seasonNumber": 1,
