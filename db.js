@@ -13,7 +13,18 @@ const initialData = {
                 "description": "Cliente de Exemplo", 
                 "createdAt": new Date().toISOString(),
                 "expiresAt": new Date(new Date().setDate(new Date().getDate() + 31)).toISOString(),
-                "status": "válido" 
+                "status": "válido",
+                "favorites": [] 
+            }
+        ],
+        "tests": [
+            {
+                "username": "54321",
+                "password": "09876",
+                "description": "Teste de Exemplo",
+                "createdAt": new Date().toISOString(),
+                "expiresAt": new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
+                "status": "ativo"
             }
         ]
     },
@@ -23,7 +34,10 @@ const initialData = {
             "name": "Filme Exemplo", 
             "description": "Esta é a descrição de um filme de exemplo para demonstração. A trama é sobre aventura e descobertas.", 
             "cover": "https://via.placeholder.com/400x600.png/222/f5f5f5?text=Filme+Exemplo", 
-            "link": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" 
+            "link": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "category": "aventura",
+            "releaseYear": 2023,
+            "createdAt": "2023-10-26T10:00:00.000Z"
         }
     ],
     "series": [
@@ -32,6 +46,29 @@ const initialData = {
             "name": "Série Exemplo", 
             "description": "Resumo da série de exemplo com uma temporada e um episódio.", 
             "cover": "https://via.placeholder.com/400x600.png/222/f5f5f5?text=Série+Exemplo", 
+            "category": "drama",
+            "releaseYear": 2022,
+            "createdAt": "2023-10-25T11:00:00.000Z",
+            "seasons": [
+                { 
+                    "seasonNumber": 1, 
+                    "episodes": [
+                        { "episodeNumber": 1, "link": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }
+                    ] 
+                }
+            ] 
+        }
+    ],
+    "animes": [
+        { 
+            "id": `anime_${Date.now()}`, 
+            "name": "Anime Exemplo", 
+            "description": "Resumo do anime de exemplo com uma temporada e um episódio para demonstração.", 
+            "cover": "https://via.placeholder.com/400x600.png/222/f5f5f5?text=Anime+Exemplo", 
+            "category": "fantasia",
+            "releaseYear": 2024,
+            "createdAt": "2024-01-15T12:00:00.000Z",
+            "popularity": 85,
             "seasons": [
                 { 
                     "seasonNumber": 1, 
@@ -46,30 +83,72 @@ const initialData = {
 
 // For a more dynamic database without manual updates, consider using a real-time database like Firebase Firestore.
 // It allows direct updates from the client-side, making changes instantly available to all users.
+function deepMerge(target, source) {
+    for (const key in source) {
+        if (source[key] instanceof Object && key in target) {
+            Object.assign(source[key], deepMerge(target[key], source[key]));
+        }
+    }
+    Object.assign(target || {}, source);
+    return target;
+}
 
 export async function initDB() {
+    let dbData = null;
     try {
         const response = await fetch(`${REMOTE_DB_URL}?t=${new Date().getTime()}`); // bust cache
         if (!response.ok) {
             throw new Error(`Network response was not ok: ${response.statusText}`);
         }
-        const remoteData = await response.json();
+        dbData = await response.json();
         console.log('Banco de dados carregado do GitHub com sucesso.');
-        saveDB(remoteData);
     } catch (error) {
         console.warn('Erro ao carregar JSON do GitHub, usando localStorage como fallback:', error);
-        // If remote fetch fails, check if there's data in localStorage. If not, initialize it.
-        if (!localStorage.getItem(DB_NAME)) {
-            localStorage.setItem(DB_NAME, JSON.stringify(initialData));
+        const localData = localStorage.getItem(DB_NAME);
+        if (localData) {
+            try {
+                dbData = JSON.parse(localData);
+            } catch (e) {
+                console.error("Error parsing local DB, initializing with default.", e);
+            }
         }
     }
+
+    // Ensure the database has the full structure, using initialData as a template
+    // This prevents errors from missing keys like `users` or `tests`.
+    const finalDB = deepMerge(dbData || {}, JSON.parse(JSON.stringify(initialData)));
+    saveDB(finalDB);
 }
 
 export function getDB() {
-    return JSON.parse(localStorage.getItem(DB_NAME));
+    try {
+        const db = JSON.parse(localStorage.getItem(DB_NAME));
+        // Fallback for safety, though initDB should prevent this.
+        if (!db) return JSON.parse(JSON.stringify(initialData));
+        return db;
+    } catch (e) {
+        console.error("Failed to parse DB from localStorage, returning initial data.", e);
+        return JSON.parse(JSON.stringify(initialData));
+    }
 }
 
 export function saveDB(db) {
+    // Data migration/ensure structure: Ensure the 'tests' array exists.
+    // This prevents errors if loading data from an older schema.
+    if (db && db.users && !Array.isArray(db.users.tests)) {
+        /* @tweakable [Default value for the 'tests' array if it's missing from the database] */
+        db.users.tests = [];
+    }
+    if (db && db.users && db.users.clients) {
+        db.users.clients.forEach(client => {
+            if (!Array.isArray(client.favorites)) {
+                client.favorites = [];
+            }
+        });
+    }
+    if (db && !Array.isArray(db.animes)) {
+        db.animes = [];
+    }
     localStorage.setItem(DB_NAME, JSON.stringify(db));
 }
 
@@ -93,6 +172,13 @@ export function importDB(file, callback) {
             // Basic structure validation
             if (importedData.config && importedData.users && importedData.movies && importedData.series) {
                 if (confirm("Deseja substituir os dados existentes? Esta ação não pode ser desfeita.")) {
+                    // Ensure new arrays exist if importing old data structure
+                    if (!importedData.users.tests) {
+                        importedData.users.tests = [];
+                    }
+                    if (!importedData.animes) {
+                        importedData.animes = [];
+                    }
                     saveDB(importedData);
                     callback(true);
                 }

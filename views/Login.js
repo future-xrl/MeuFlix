@@ -63,20 +63,37 @@ function handleLogin(e) {
         return;
     }
 
-    // Client login attempt
+    // Client/Test login attempt
     if (/^\d{5}$/.test(username)) {
+        // Check clients first
         const client = db.users.clients.find(c => c.username === username && c.password === password);
         if (client) {
             const isExpired = new Date(client.expiresAt) < new Date();
-            if (client.status === 'válido' && !isExpired) {
+            if (client.status === 'ativo' && !isExpired) {
                 localStorage.setItem('session', JSON.stringify({ username: client.username, role: 'client' }));
                 navigate('/cliente');
             } else {
                 showToast("Sua conta está expirada ou inválida.", 'error');
             }
-        } else {
-            showToast("Credenciais inválidas ou expiradas.", 'error');
+            return;
         }
+
+        // Check tests if not found in clients
+        const testUser = db.users.tests.find(t => t.username === username && t.password === password);
+        if (testUser) {
+            const isExpired = new Date(testUser.expiresAt) < new Date();
+             if (testUser.status === 'bloqueado') {
+                showToast("Esta conta de teste foi bloqueada.", 'error');
+            } else if (testUser.status === 'ativo' && !isExpired) {
+                localStorage.setItem('session', JSON.stringify({ username: testUser.username, role: 'client' }));
+                navigate('/cliente');
+            } else {
+                showToast("Sua conta de teste está expirada ou inválida.", 'error');
+            }
+            return;
+        }
+
+        showToast("Credenciais inválidas ou expiradas.", 'error');
         return;
     }
 

@@ -11,6 +11,7 @@
 <body>
     <div id="app"></div>
     <div id="toast-container"></div>
+    <div id="modal-container"></div>
 
     <script type="importmap">
     {
@@ -20,10 +21,32 @@
             "utils": "./utils.js",
             "views/Login": "./views/Login.js",
             "views/Admin": "./views/Admin.js",
-            "views/Client": "./views/Client.js"
+            "views/Client": "./views/Client.js",
+            "views/client/Profile": "./views/client/Profile.js",
+            "views/client/Settings": "./views/client/Settings.js",
+            "views/client/Favorites": "./views/client/Favorites.js",
+            "views/client/Player": "./views/client/Player.js",
+            "views/client/History": "./views/client/History.js",
+            "views/admin/Layout": "./views/admin/Layout.js",
+            "views/admin/Dashboard": "./views/admin/Dashboard.js",
+            "views/admin/GenerateTest": "./views/admin/GenerateTest.js",
+            "views/admin/MyTests": "./views/admin/MyTests.js",
+            "views/admin/ManageClients": "./views/admin/ManageClients.js",
+            "views/admin/AddMovie": "./views/admin/AddMovie.js",
+            "views/admin/AddSeries": "./views/admin/AddSeries.js",
+            "views/admin/AddAnime": "./views/admin/AddAnime.js",
+            "views/admin/Backup": "./views/admin/Backup.js"
         }
     }
     </script>
     <script type="module" src="app.js"></script>
+    <script>
+        // Global favorite toggle function to be accessible by inline onclick attributes
+        // This avoids issues with module scopes and dynamically generated content.
+        window.toggleFavorite = (itemId) => {
+            const event = new CustomEvent('toggleFavorite', { detail: { itemId } });
+            document.dispatchEvent(event);
+        };
+    </script>
 </body>
 </html>

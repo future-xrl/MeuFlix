@@ -26,6 +26,10 @@ html, body {
     font-size: 16px;
 }
 
+body.client-view {
+    padding-bottom: 70px; /* Space for mobile bottom nav */
+}
+
 #app {
     min-height: 100vh;
     display: flex;
@@ -175,6 +179,18 @@ textarea.form-control {
     font-size: 0.9rem;
 }
 
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted-color);
+    font-size: 1.1rem;
+    padding: 0.2rem;
+}
+.btn-icon:hover {
+    color: var(--text-color);
+}
+
 /* --- Main App Layout (Admin/Client) --- */
 .main-layout {
     display: flex;
@@ -187,6 +203,7 @@ textarea.form-control {
     background-color: var(--medium-dark-color);
     padding: 1.5rem;
     transition: transform 0.3s ease-in-out;
+    flex-shrink: 0;
 }
 
 .sidebar h2 {
@@ -216,6 +233,19 @@ textarea.form-control {
     flex: 1;
     padding: 2rem;
     overflow-y: auto;
+    position: relative; /* For fixed logout button positioning */
+    display: flex;
+    flex-direction: column;
+}
+#admin-page-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+#admin-page-content .card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 }
 
 .main-header {
@@ -225,6 +255,51 @@ textarea.form-control {
     margin-bottom: 2rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--light-dark-color);
+}
+
+#admin-header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+#mobile-menu-toggle {
+    display: none; /* Hidden on desktop */
+    font-size: 1.5rem;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+#logout-btn-fixed {
+    width: 100px;
+    height: 40px;
+    padding: 0;
+}
+
+.fixed-header-buttons {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/** @tweakable [Styling for the fixed publish button] */
+#publish-btn-fixed {
+    background-color: #28a745; /* green */
+    color: white;
+    width: 100px;
+    height: 40px;
+    border-radius: 5px;
+    padding: 5px 10px;
+}
+
+#publish-btn-fixed:hover {
+    background-color: #218838;
 }
 
 .main-header h1 {
@@ -245,6 +320,79 @@ textarea.form-control {
     font-weight: bold;
     color: var(--primary-color);
 }
+.client-header nav.desktop-nav {
+    display: flex;
+    gap: 1rem;
+}
+.client-header .btn-nav {
+    background: linear-gradient(to right, #4facfe, #00f2fe);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    font-weight: bold;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.client-header .btn-nav:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    text-decoration: none;
+}
+.client-header .btn-nav.active {
+    background: var(--primary-color);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.header-favorite-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-left: 1rem;
+}
+
+.header-fav-icon {
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-muted-color);
+    transition: color 0.2s, transform 0.2s;
+}
+
+.header-fav-icon:hover {
+    transform: scale(1.1);
+}
+
+.header-fav-icon.favorited {
+    color: var(--primary-color);
+}
+
+.header-fav-dropdown {
+    display: none;
+    position: absolute;
+    top: 120%;
+    right: -10px;
+    background: #fff;
+    color: #333;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: var(--box-shadow);
+    z-index: 1000;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.header-fav-dropdown.show {
+    display: block;
+}
+.header-fav-dropdown a {
+    display: block;
+    margin-top: 5px;
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
 .client-header nav a {
     color: var(--text-muted-color);
     margin: 0 1rem;
@@ -257,6 +405,26 @@ textarea.form-control {
 .client-header .header-actions button {
     margin-left: 1rem;
     width: auto;
+}
+
+.client-header .header-actions .welcome-user {
+    color: var(--text-muted-color);
+    margin-right: 1rem;
+}
+
+#client-menu-toggle {
+    display: none; /* Replaced by bottom menu on mobile */
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+}
+
+.mobile-nav {
+    display: none;
 }
 
 /* --- Cards --- */
@@ -275,31 +443,187 @@ textarea.form-control {
     padding-bottom: 0.5rem;
 }
 
+/* Catalog Top Bar */
+.catalog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.catalog-header h1 {
+    margin: 0;
+}
+
+.catalog-info {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.total-count {
+    font-size: 1rem;
+    color: var(--text-muted-color);
+}
+
+.category-menu-wrapper {
+    position: relative;
+}
+
+.category-menu-toggle {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.category-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #fff;
+    color: #333;
+    border-radius: var(--border-radius);
+    padding: 0.5rem 0;
+    z-index: 100;
+    max-height: 300px;
+    overflow-y: auto;
+    min-width: 220px;
+    box-shadow: var(--box-shadow);
+}
+
+#category-search-input {
+    width: 90%;
+    margin: 5px 5% 10px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    color: #333;
+}
+
+.category-menu.show {
+    display: block;
+}
+
+.category-menu a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    color: #333;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.category-menu a:hover, .category-menu a.active {
+    background-color: #f0f0f0;
+}
+.category-menu a:focus {
+    outline: 2px solid var(--dark-color);
+    outline-offset: -2px;
+}
+.category-menu a i {
+    color: #555;
+    width: 1.2em;
+    text-align: center;
+}
+
+/* Anime Sort Button */
+.anime-sort-button {
+    /** @tweakable [Styling for the anime sort button] */
+    background-color: #fff;
+    color: #141414;
+    border: 1px solid #ccc;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* --- Mobile Search --- */
+#search-toggle-btn {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 15px;
+    right: 60px; /* Space for the menu toggle */
+    z-index: 1001;
+    background: var(--medium-dark-color);
+    color: var(--text-color);
+    border: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    font-size: 1rem;
+}
+
+.mobile-search-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1010;
+    padding: 1rem;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.mobile-search-overlay.show {
+    display: flex;
+}
+
+/** @tweakable [Styling for the mobile search bar] */
+.mobile-search-overlay input {
+    width: 90%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--light-dark-color);
+    background-color: var(--dark-color);
+    color: var(--text-color);
+    margin-top: 50px;
+}
+
 /* --- Catalog (Client) --- */
 .catalog-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    /* @tweakable [Dimensions of the media cards in the catalog] */
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 1.5rem;
     margin-top: 2rem;
 }
 
 .media-card {
-    background-color: var(--light-dark-color);
+    background-color: transparent; /* Changed for new style */
     border-radius: var(--border-radius);
     overflow: hidden;
     cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease;
     text-align: center;
+    position: relative; /* For favorite button */
 }
 
 .media-card:hover {
     transform: scale(1.05);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+}
+
+.media-card .cover-container {
+    position: relative;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--box-shadow);
 }
 
 .media-card img, .media-card .placeholder-cover {
     width: 100%;
-    height: 300px;
+    /* @tweakable [Aspect ratio for the media card covers] */
+    aspect-ratio: 2 / 3;
     object-fit: cover;
     background-color: var(--medium-dark-color);
     display: flex;
@@ -307,20 +631,62 @@ textarea.form-control {
     align-items: center;
     font-size: 1.5rem;
     color: var(--text-muted-color);
+    border-radius: var(--border-radius);
 }
 
 .media-card-title {
-    padding: 1rem;
+    padding: 0.75rem 0.25rem;
     font-weight: bold;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.9rem;
+}
+
+.favorite-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-muted-color);
+}
+
+.details-info .favorite-section {
+    /** @tweakable [Styling for the favorite button section in details view] */
+    margin-bottom: 1rem;
+    justify-content: flex-start;
+}
+
+.favorite-section .favorite-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted-color);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.favorite-section .favorite-btn.favorited {
+    color: var(--primary-color);
+}
+
+/** @tweakable [Styling for the favorited button on the player page] */
+.favorite-btn-player.favorited {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
 /* Search Bar */
 .search-bar {
     position: relative;
     max-width: 500px;
+}
+.search-bar.desktop-search {
+    /* Styles for desktop search bar if needed */
 }
 .search-bar .form-control {
     padding-left: 2.5rem;
@@ -333,26 +699,65 @@ textarea.form-control {
     color: var(--text-muted-color);
 }
 
-/* Details View */
-.details-view {
-    display: flex;
-    gap: 2rem;
-    margin-top: 2rem;
+/* --- Player Page --- */
+.player-page {
+    padding: 0 !important;
 }
-.details-cover {
-    flex-basis: 300px;
-}
-.details-cover img {
+
+.player-wrapper {
     width: 100%;
-    border-radius: var(--border-radius);
+    margin: 0 auto;
+    background-color: #000;
 }
-.details-info {
-    flex: 1;
+.player-wrapper iframe, .player-wrapper video {
+    width: 100%;
+    /** @tweakable [Player height on desktop] */
+    height: 60vh;
+    object-fit: contain;
+    border: none;
+    display: block;
 }
-.details-info h1 { margin-bottom: 1rem; }
-.details-info p { margin-bottom: 1.5rem; color: var(--text-muted-color); }
-.season-buttons, .episode-buttons { margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.btn-season.active { background-color: var(--primary-color); color: white; }
+
+.player-placeholder {
+    width: 100%;
+    /** @tweakable [Player height on desktop] */
+    height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted-color);
+    font-size: 1.2rem;
+}
+
+.player-info-container {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+}
+
+.favorite-button-wrapper-player {
+    /** @tweakable [Styling for the favorite button on the player page] */
+    margin-bottom: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.favorite-btn-player {
+    display: inline-flex;
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: none;
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 1rem;
+    align-items: center;
+}
+.favorite-btn-player .fa-heart {
+    color: grey;
+    transition: color 0.2s ease-in-out;
+}
+.favorite-btn-player.favorited .fa-heart {
+    color: red;
+}
 
 /* Player */
 .player-container {
@@ -373,10 +778,11 @@ textarea.form-control {
     border: 0;
 }
 
-
 /* --- Table --- */
 .table-wrapper {
     overflow-x: auto;
+    flex-grow: 1; /* Makes table wrapper expand */
+    overflow: visible; /* Allows dropdown to show */
 }
 .styled-table {
     width: 100%;
@@ -396,8 +802,19 @@ textarea.form-control {
 .styled-table tbody tr:last-of-type {
     border-bottom: 2px solid var(--primary-color);
 }
-.styled-table .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.styled-table .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 .styled-table .actions .btn { width: auto; }
+.styled-table td .status {
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--border-radius);
+    font-weight: bold;
+    color: white;
+    text-transform: capitalize;
+}
+.styled-table td .status.ativo { background-color: var(--success-color); }
+.styled-table td .status.expirado { background-color: var(--error-color); }
+.styled-table td .status.pendente { background-color: #f0ad4e; }
+.styled-table td .status.bloqueado { background-color: #777; }
 
 /* Loading Spinner */
 .loading-spinner {
@@ -465,34 +882,460 @@ textarea.form-control {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* --- Dashboard --- */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+.dashboard-card {
+    background: var(--medium-dark-color);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+    box-shadow: var(--box-shadow);
+}
+.dashboard-card .count {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+.dashboard-card .title {
+    font-size: 1rem;
+    color: var(--text-muted-color);
+    margin-top: 0.5rem;
+}
+
+/* --- Action Dropdown --- */
+.action-dropdown {
+    position: relative;
+    display: inline-block;
+}
+.action-dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: var(--light-dark-color);
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    right: 0;
+}
+.action-dropdown-content a {
+    color: var(--text-color);
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    cursor: pointer;
+}
+.action-dropdown-content a:hover { background-color: #444; }
+.action-dropdown.show .action-dropdown-content { display: block; }
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--light-dark-color);
+}
+.pagination button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+}
+
+/* Modal Styles */
+#modal-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: none; /* flex */
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 1rem;
+}
+.modal-content {
+    background-color: var(--medium-dark-color);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    width: 100%;
+    max-width: 500px;
+    box-shadow: var(--box-shadow);
+    animation: fadeIn 0.3s;
+    position: relative;
+}
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+.modal-content h2 { margin-bottom: 1rem; }
+.duration-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+.duration-options .btn { width: 100%; }
+.duration-options .btn.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* --- Slide-in Menu --- */
+#menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1002;
+}
+#menu-overlay.show {
+    display: block;
+}
+
+#slide-in-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 250px;
+    height: 100%;
+    background-color: var(--medium-dark-color);
+    box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+    z-index: 1003;
+    padding-top: 60px;
+}
+#slide-in-menu.open {
+    transform: translateX(0);
+}
+#slide-in-menu a, #slide-in-menu button {
+    display: block;
+    width: 100%;
+    padding: 15px 20px;
+    color: var(--text-color);
+    text-decoration: none;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 1rem;
+    border-bottom: 1px solid var(--light-dark-color);
+    cursor: pointer;
+}
+#slide-in-menu a.active {
+    background-color: var(--light-dark-color);
+    color: var(--primary-color);
+}
+#slide-in-menu a:hover, #slide-in-menu button:hover {
+    background-color: var(--light-dark-color);
+}
+
+/* --- History Page --- */
+.history-grid {
+    display: grid;
+    /* @tweakable [Grid layout for history cards on desktop] */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.history-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background-color: var(--medium-dark-color);
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.history-card-cover {
+    width: 60px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 5px;
+    flex-shrink: 0;
+}
+
+.history-card-info {
+    overflow: hidden;
+}
+
+.history-card-title {
+    font-size: 1rem;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.25rem;
+}
+
+.history-card-timestamp {
+    font-size: 0.8rem;
+    color: var(--text-muted-color);
+}
+
 /* --- Responsive Design --- */
 @media (max-width: 768px) {
+    body {
+        font-size: 14px;
+        -webkit-text-size-adjust: 100%; /* Prevent font scaling on iOS */
+    }
+    
+    .player-wrapper iframe, .player-wrapper video, .player-placeholder {
+        /** @tweakable [Player height on mobile] */
+        height: 40vh;
+        object-fit: cover;
+    }
+
+    .favorite-btn-player {
+        /** @tweakable [Font size for favorite button on mobile] */
+        font-size: 16px; 
+        padding: 5px;
+    }
+
     .main-layout {
         flex-direction: column;
     }
     .sidebar {
-        width: 100%;
-        height: auto;
-        padding: 1rem;
-        /* Mobile menu can be implemented here with JS */
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100%;
+        z-index: 1000;
+        transform: translateX(-100%);
+    }
+    .sidebar.open {
+        transform: translateX(0);
     }
     .main-content {
         padding: 1rem;
+        padding-top: 60px; /* Space for header */
+        width: 100%;
+        overflow-x: hidden;
+    }
+     body.client-view .main-content {
+        padding-top: 1rem; /* Reset admin padding */
     }
     .main-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-    .client-header {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    .client-header nav {
-        display: flex;
-        justify-content: center;
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100%;
+        background: var(--dark-color);
+        padding: 1rem;
+        z-index: 999;
+        margin-bottom: 0;
+        border-bottom: 1px solid var(--light-dark-color);
     }
+    #mobile-menu-toggle {
+        display: block;
+    }
+    #logout-btn-fixed {
+        width: 80px;
+        height: 35px;
+        padding: 0;
+    }
+
+    .fixed-header-buttons {
+        position: absolute; /* Relative to header on mobile */
+        top: 0.5rem;
+        right: 1rem;
+        gap: 8px;
+    }
+
+    .fixed-header-buttons .btn {
+        width: 80px;
+        height: 35px;
+        padding: 0;
+    }
+
+    .main-header h1 {
+        font-size: 1.2rem;
+        margin-left: 2.5rem; /* Space from hamburger */
+    }
+    
+    .card {
+        padding: 1rem;
+    }
+
+    .catalog-grid {
+        /** @tweakable [Grid layout for catalog on mobile] */
+        display: grid;
+        grid-template-columns: repeat(3, 70px);
+        grid-template-rows: repeat(auto-fit, 100px);
+        gap: 10px;
+        justify-content: center;
+        padding-bottom: 2rem;
+    }
+    .media-card {
+        width: 70px;
+        height: 100px;
+    }
+    .media-card .cover-container {
+        height: 100%;
+    }
+     .media-card .cover-container img, .media-card .cover-container .placeholder-cover {
+        height: 100%;
+        border-radius: 5px;
+    }
+    .media-card-title {
+       display: none; /* Hide title on this compact mobile view */
+    }
+
+    /* Responsive Table to Card Layout */
+    .styled-table {
+        border: 0;
+    }
+    .styled-table thead {
+        display: none;
+    }
+    .styled-table tr {
+        display: block;
+        margin-bottom: 1rem;
+        border-radius: var(--border-radius);
+        background: var(--light-dark-color);
+        box-shadow: var(--box-shadow);
+        border-bottom: 2px solid var(--primary-color);
+    }
+    .styled-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        border-bottom: 1px solid #444;
+        text-align: right;
+        position: relative;
+    }
+    .styled-table td:last-child {
+        border-bottom: 0;
+    }
+    .styled-table td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        text-align: left;
+        margin-right: 1rem;
+        color: var(--text-muted-color);
+    }
+    .styled-table .actions {
+        justify-content: flex-end; /* Align actions to the right */
+        gap: 0.8rem;
+    }
+    .action-dropdown {
+        position: static; /* Let it flow with content */
+    }
+    .action-dropdown-content {
+        right: 15px; /* Align to the right edge of the card */
+    }
+    .styled-table td.client-description {
+        word-break: break-word;
+    }
+    .table-wrapper {
+        overflow-x: hidden;
+    }
+     .form-control {
+        padding: 0.7rem;
+        font-size: 1rem;
+    }
+     .pagination {
+        flex-wrap: wrap;
+    }
+     .pagination button {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+    }
+
+    .client-header {
+        flex-direction: row; /* Keep horizontal */
+        flex-wrap: wrap;
+        padding: 0.5rem 5%;
+        justify-content: space-between;
+    }
+    .client-header nav.desktop-nav, .client-header .header-actions {
+        display: none; /* Hide desktop nav and actions */
+    }
+     .client-header .logo { font-size: 1.2rem; }
+
+    #client-menu-toggle {
+        /* This is the top-right hamburger menu, we no longer need it. */
+        display: none;
+    }
+
+    .search-bar.desktop-search {
+        display: none;
+    }
+    #search-toggle-btn {
+        display: block;
+    }
+
+    .mobile-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        background-color: var(--medium-dark-color);
+        justify-content: space-around;
+        align-items: center;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+        z-index: 1000;
+    }
+    .mobile-nav a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        color: var(--text-muted-color);
+        font-size: 12px;
+        text-decoration: none;
+        height: 100%;
+    }
+    .mobile-nav a i {
+        font-size: 1.2rem;
+        margin-bottom: 2px;
+    }
+    .mobile-nav a.active {
+        color: var(--primary-color);
+    }
+
+    /** @tweakable [Styling for the mobile menu toggle button in the bottom bar] */
+    .mobile-nav .mobile-nav-menu-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        color: var(--text-muted-color);
+        font-size: 12px;
+        text-decoration: none;
+        height: 100%;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+    }
+    .mobile-nav .mobile-nav-menu-btn i {
+        font-size: 1.2rem;
+        margin-bottom: 2px;
+    }
+
     .details-view {
         flex-direction: column;
     }
@@ -502,5 +1345,13 @@ textarea.form-control {
     }
     .details-cover img {
         max-width: 300px;
+    }
+
+    .history-grid {
+        grid-template-columns: 1fr; /* Single column on mobile */
+    }
+    .history-card {
+        width: 100%;
+        height: auto;
     }
 }

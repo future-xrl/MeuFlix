@@ -1,68 +1,307 @@
-import { getDB } from 'db';
-import { normalizeString, getYoutubeEmbedUrl } from 'utils';
+import { getDB, saveDB } from 'db';
+import { normalizeString, getEmbedUrl, showToast, MEDIA_CATEGORIES, renderPaginationControls, debounce } from 'utils';
 
 const session = JSON.parse(localStorage.getItem('session'));
 let currentFilter = '';
-let currentView = { type: 'movies', id: null }; // or { type: 'series', id: null }
+let currentCategory = 'todos';
+/* @tweakable [Default sort order for animes] */
+let currentAnimeSort = 'alfabetica';
+let currentPage = 1;
+/** @tweakable [Number of items per page in the client catalog] */
+const ITEMS_PER_PAGE = 20;
+let currentView = { type: 'filmes', id: null }; // or { type: 'series', id: null } or { type: 'animes', id: null }
 
-function renderHeader(activeLink) {
+function getCurrentUser() {
+    if (!session?.username) return null;
+    const db = getDB();
+    let user = db.users.clients.find(c => c.username === session.username);
+    if (user) return { user, type: 'clients' };
+
+    user = (db.users.tests || []).find(t => t.username === session.username);
+    if (user) return { user, type: 'tests' };
+
+    return null;
+}
+
+async function handleHeaderFavoriteClick(itemId) {
+    const db = getDB();
+    const userResult = getCurrentUser();
+    if (!userResult) return;
+
+    const { user, type } = userResult;
+    const userIndex = db.users[type].findIndex(u => u.username === user.username);
+    if (userIndex === -1) return;
+
+    user.favorites = user.favorites || [];
+    const itemIndex = user.favorites.indexOf(itemId);
+    const isFavorited = itemIndex > -1;
+
+    if (isFavorited) {
+        user.favorites.splice(itemIndex, 1); // Unfavorite
+    } else {
+        user.favorites.push(itemId); // Favorite
+    }
+    
+    db.users[type][userIndex].favorites = user.favorites;
+    saveDB(db);
+
+    const heartIcon = document.getElementById('header-fav-icon');
+    if (heartIcon) {
+        heartIcon.classList.toggle('favorited', !isFavorited);
+    }
+    
+    const favDropdown = document.getElementById('header-fav-dropdown');
+    if (favDropdown) {
+        const dropdownContent = !isFavorited 
+            ? 'Adicionado aos Favoritos! <a href="#/cliente/favoritos">Ver lista</a>' 
+            : 'Removido dos Favoritos!';
+        favDropdown.innerHTML = dropdownContent;
+        favDropdown.classList.add('show');
+        setTimeout(() => favDropdown.classList.remove('show'), 2000);
+    }
+}
+
+export function renderHeader(activeLink, currentItem = null) {
+    const userResult = getCurrentUser();
+    const currentUser = userResult ? userResult.user : {};
+    const isFavorited = currentItem && (currentUser.favorites || []).includes(currentItem.id);
+
+    /** @tweakable [The welcome message template for users] */
+    let welcomeMessageTemplate = "Olá, {{displayName}}";
+    let displayName = session.username;
+
+    if (userResult && userResult.type === 'clients' && userResult.user.name) {
+        displayName = userResult.user.name;
+    }
+    
+    const welcomeMessage = welcomeMessageTemplate.replace("{{displayName}}", displayName);
+
     return `
         <header class="client-header">
             <div class="logo">🎬 CinemaStream</div>
-            <nav>
-                <a href="#/cliente/filmes" class="${activeLink === 'filmes' ? 'active' : ''}">Filmes</a>
-                <a href="#/cliente/series" class="${activeLink === 'series' ? 'active' : ''}">Séries</a>
+            <nav class="desktop-nav">
+                <a href="#/cliente/filmes" class="btn-nav ${activeLink === 'filmes' ? 'active' : ''}"><i class="fa-solid fa-film"></i> Filmes</a>
+                <a href="#/cliente/series" class="btn-nav ${activeLink === 'series' ? 'active' : ''}"><i class="fa-solid fa-tv"></i> Séries</a>
+                <a href="#/cliente/animes" class="btn-nav ${activeLink === 'animes' ? 'active' : ''}"><i class="fa-solid fa-dragon"></i> Animes</a>
+                <a href="#/cliente/favoritos" class="btn-nav ${activeLink === 'favoritos' ? 'active' : ''}"><i class="fa-solid fa-heart"></i> Favoritos</a>
+                <a href="#/cliente/historico" class="btn-nav ${activeLink === 'historico' ? 'active' : ''}"><i class="fa-solid fa-history"></i> Histórico</a>
+                 ${currentItem ? `
+                    <div class="header-favorite-container">
+                        <i id="header-fav-icon" class="fa-solid fa-heart header-fav-icon ${isFavorited ? 'favorited' : ''}" data-id="${currentItem.id}"></i>
+                        <div id="header-fav-dropdown" class="header-fav-dropdown">
+                            <!-- Content is set dynamically -->
+                        </div>
+                    </div>
+                ` : ''}
             </nav>
             <div class="header-actions">
+                <span class="welcome-user">${welcomeMessage}</span>
                 <button id="logout-btn" class="btn btn-secondary btn-sm">Sair <i class="fa-solid fa-right-from-bracket"></i></button>
             </div>
+            <button id="client-menu-toggle" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
         </header>
+         <nav class="mobile-nav">
+            <a href="#/cliente/filmes" class="${activeLink === 'filmes' ? 'active' : ''}">
+                <i class="fa-solid fa-film"></i>
+                <span>Filmes</span>
+            </a>
+            <a href="#/cliente/series" class="${activeLink === 'series' ? 'active' : ''}">
+                <i class="fa-solid fa-tv"></i>
+                <span>Séries</span>
+            </a>
+            <a href="#/cliente/animes" class="${activeLink === 'animes' ? 'active' : ''}">
+                <i class="fa-solid fa-dragon"></i>
+                <span>Animes</span>
+            </a>
+            <a href="#/cliente/favoritos" class="${activeLink === 'favoritos' ? 'active' : ''}">
+                <i class="fa-solid fa-heart"></i>
+                <span>Favoritos</span>
+            </a>
+            <a href="#/cliente/historico" class="${activeLink === 'historico' ? 'active' : ''}">
+                <i class="fa-solid fa-history"></i>
+                <span>Histórico</span>
+            </a>
+            <button id="mobile-menu-toggle-bottom" class="mobile-nav-menu-btn">
+                <i class="fa-solid fa-bars"></i>
+                <span>Menu</span>
+            </button>
+        </nav>
     `;
 }
 
-function renderMediaGrid(items, type) {
+export function renderMediaGrid(items, onPageChange, { currentPage, itemsPerPage }) {
+    const userResult = getCurrentUser();
+    const currentUser = userResult ? userResult.user : {};
+    const favorites = currentUser.favorites || [];
+
+    const paginatedItems = items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    
     if (items.length === 0) {
         return `<p>Nenhum item encontrado.</p>`;
     }
-    return `
+
+    const gridHTML = `
         <div class="catalog-grid">
-            ${items.map(item => `
-                <div class="media-card" data-id="${item.id}" data-type="${type}">
-                    ${item.cover ? `<img src="${item.cover}" alt="${item.name}">` : `<div class="placeholder-cover"><i class="fa-solid fa-film"></i></div>`}
+            ${paginatedItems.map(item => {
+                // Ensure item has a type, especially for favorites page
+                const type = item.type || (item.id.startsWith('movie') ? 'filmes' : (item.id.startsWith('series') ? 'series' : 'animes'));
+                return `
+                <div class="media-card" data-id="${item.id}">
+                    <div class="cover-container">
+                        ${item.cover ? `<img src="${item.cover}" alt="${item.name}" loading="lazy">` : `<div class="placeholder-cover"><i class="fa-solid fa-film"></i></div>`}
+                    </div>
                     <div class="media-card-title">${item.name}</div>
                 </div>
-            `).join('')}
+            `}).join('')}
         </div>
+        <div id="pagination-container"></div>
     `;
+
+    // We need a container to render the pagination into after the grid is on the DOM.
+    // The grid is returned as a string, so we'll call renderPaginationControls in the main page render functions.
+    return gridHTML;
 }
 
-function renderMoviesPage() {
-    const db = getDB();
-    const filteredMovies = db.movies.filter(movie => normalizeString(movie.name).includes(normalizeString(currentFilter)));
+function renderCatalogPage(title, items, type, onPageChange) {
+    const userResult = getCurrentUser();
+    const currentUser = userResult ? userResult.user : {};
+    const favorites = currentUser.favorites || [];
+
+    const filteredItems = items.filter(item => {
+        const matchesSearch = normalizeString(item.name).includes(normalizeString(currentFilter));
+        
+        if (currentCategory === 'todos') return matchesSearch;
+        if (currentCategory === 'favoritos') return matchesSearch && favorites.includes(item.id);
+        // "Mais assistidos" and "Adicionados Recentemente" would require more data (timestamps, view counts)
+        // For now, we'll just filter by category.
+        if (currentCategory === 'mais_assistidos' || currentCategory === 'recentes') return matchesSearch;
+        
+        return matchesSearch && item.category === currentCategory;
+    });
+
+    const categoriesForMenu = [
+        { key: 'todos', name: 'Todos' },
+        { key: 'favoritos', name: 'Favoritos' },
+        ...MEDIA_CATEGORIES
+    ];
+
     const content = `
         <div class="container">
-            <h1>Filmes</h1>
-            <div class="search-bar">
-                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="search-input" class="form-control" placeholder="Pesquisar Filmes..." value="${currentFilter}">
+            <div class="catalog-header">
+                <h1>${title}</h1>
+                 <div class="search-bar desktop-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="search-input" class="form-control" placeholder="Pesquisar ${title}..." value="${currentFilter}">
+                </div>
+                <div class="catalog-info">
+                    <span class="total-count">Todos ${items.length}</span>
+                    <div class="category-menu-wrapper">
+                        <button class="category-menu-toggle" id="category-menu-toggle" aria-label="Abrir menu de categorias">
+                            <i class="fa-solid fa-bars"></i>
+                        </button>
+                        <div class="category-menu" id="category-menu">
+                             <input type="text" id="category-search-input" class="form-control" placeholder="Pesquisar categoria...">
+                             <div id="category-links-container">
+                                ${categoriesForMenu.map(cat => `<a href="#" class="category-link ${currentCategory === cat.key ? 'active' : ''}" data-category="${cat.key}" tabindex="0">${cat.name}</a>`).join('')}
+                             </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            ${renderMediaGrid(filteredMovies, 'movie')}
+            ${renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
         </div>
     `;
     return content;
 }
 
-function renderSeriesPage() {
+function renderMoviesPage(container) {
     const db = getDB();
-    const filteredSeries = db.series.filter(series => normalizeString(series.name).includes(normalizeString(currentFilter)));
+    const onPageChange = (newPage) => {
+        currentPage = newPage;
+        updateView(container, window.location.hash.slice(1));
+    };
+    const content = renderCatalogPage('Filmes', db.movies, 'filmes', onPageChange);
+    return content;
+}
+
+function renderSeriesPage(container) {
+    const db = getDB();
+    const onPageChange = (newPage) => {
+        currentPage = newPage;
+        updateView(container, window.location.hash.slice(1));
+    };
+    const content = renderCatalogPage('Séries', db.series, 'series', onPageChange);
+    return content;
+}
+
+function renderAnimesPage(container) {
+    const db = getDB();
+    const onPageChange = (newPage) => {
+        currentPage = newPage;
+        updateView(container, window.location.hash.slice(1));
+    };
+    
+    let animes = [...(db.animes || [])];
+    let showedSortToast = false;
+
+    // Apply sorting
+    switch(currentAnimeSort) {
+        case 'alfabetica':
+            animes.sort((a, b) => normalizeString(a.name).localeCompare(normalizeString(b.name)));
+            break;
+        case 'numerica': // Assuming numeric means by ID or some numeric property
+            animes.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+            break;
+        case 'recentes':
+            if (!showedSortToast && animes.some(a => !a.createdAt)) {
+                showToast('Alguns itens sem data de adição podem não ser ordenados corretamente.', 'error');
+                showedSortToast = true;
+            }
+            animes.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+            break;
+        case 'lancamento':
+            if (!showedSortToast && animes.some(a => !a.releaseYear)) {
+                showToast('Alguns itens sem ano de lançamento podem não ser ordenados corretamente.', 'error');
+                showedSortToast = true;
+            }
+            animes.sort((a, b) => (b.releaseYear || 0) - (a.releaseYear || 0));
+            break;
+        case 'populares':
+            animes.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+            break;
+    }
+
+    const filteredItems = animes.filter(item => normalizeString(item.name).includes(normalizeString(currentFilter)));
+    
+    const sortOptions = {
+        'alfabetica': { name: 'Ordem Alfabética', icon: 'fa-solid fa-sort-alpha-down' },
+        'numerica': { name: 'Numérica', icon: 'fa-solid fa-sort-numeric-down' },
+        'recentes': { name: 'Recém Adicionados', icon: 'fa-solid fa-clock' },
+        'lancamento': { name: 'Lançamento', icon: 'fa-solid fa-calendar-days' },
+        'populares': { name: 'Mais Populares', icon: 'fa-solid fa-fire' }
+    };
+
     const content = `
         <div class="container">
-            <h1>Séries</h1>
-            <div class="search-bar">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="search-input" class="form-control" placeholder="Pesquisar Séries..." value="${currentFilter}">
+            <div class="catalog-header">
+                <h1>Animes</h1>
+                 <div class="search-bar desktop-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="search-input" class="form-control" placeholder="Pesquisar Animes..." value="${currentFilter}">
+                </div>
+                <div class="catalog-info">
+                    <span class="total-count">Todos ${animes.length}</span>
+                    <div class="category-menu-wrapper">
+                        <button class="anime-sort-button" id="category-menu-toggle" aria-label="Abrir menu de ordenação">
+                            ${sortOptions[currentAnimeSort]?.name || 'Ordenar'}
+                        </button>
+                        <div class="category-menu" id="category-menu">
+                             ${Object.entries(sortOptions).map(([key, value]) => `<a href="#" class="category-link ${currentAnimeSort === key ? 'active' : ''}" data-category="${key}" tabindex="0"><i class="${value.icon}"></i> ${value.name}</a>`).join('')}
+                        </div>
+                    </div>
+                </div>
             </div>
-            ${renderMediaGrid(filteredSeries, 'series')}
+            ${renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
         </div>
     `;
     return content;
@@ -71,9 +310,18 @@ function renderSeriesPage() {
 function renderMovieDetails(movieId) {
     const db = getDB();
     const movie = db.movies.find(m => m.id === movieId);
-    if (!movie) return `<p>Filme não encontrado.</p>`;
+    if (!movie) {
+        const errorMessage = "Erro ao carregar detalhes, item não encontrado.";
+        showToast(errorMessage, 'error');
+        window.location.hash = '#/cliente/filmes'; // Go back to safety
+        return `<p>${errorMessage}</p>`;
+    }
     
-    const embedUrl = getYoutubeEmbedUrl(movie.link);
+    const userResult = getCurrentUser();
+    const currentUser = userResult ? userResult.user : {};
+    const favorites = currentUser.favorites || [];
+    const isFavorited = favorites.includes(movie.id);
+    const embedUrl = getEmbedUrl(movie.link);
 
     return `
       <div class="container">
@@ -84,11 +332,21 @@ function renderMovieDetails(movieId) {
             </div>
             <div class="details-info">
                 <h1>${movie.name}</h1>
+                <p><strong>Ano de Lançamento:</strong> ${movie.releaseYear || 'N/A'}</p>
+                <div class="favorite-button-wrapper">
+                    <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${movie.id}" aria-label="Marcar como favorito">
+                        <i class="fa-${isFavorited ? 'solid' : 'regular'} fa-heart"></i>
+                        <span>${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
+                    </button>
+                </div>
                 <p>${movie.description}</p>
-                ${embedUrl 
-                    ? `<div class="player-container"><iframe src="${embedUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>` 
-                    : `<a href="${movie.link}" target="_blank" class="btn btn-primary">Assistir em Nova Aba</a>`
-                }
+                <div id="player-container" class="player-container">
+                    ${embedUrl 
+                        ? `<iframe src="${embedUrl}" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>` 
+                        : `<a href="${movie.link}" target="_blank" class="btn btn-primary">Assistir em Nova Aba</a>`
+                    }
+                </div>
+                 <div id="fallback-player"></div>
             </div>
         </div>
       </div>
@@ -98,7 +356,17 @@ function renderMovieDetails(movieId) {
 function renderSeriesDetails(seriesId) {
     const db = getDB();
     const series = db.series.find(s => s.id === seriesId);
-    if (!series) return `<p>Série não encontrada.</p>`;
+    if (!series) {
+        const errorMessage = "Erro ao carregar detalhes, item não encontrado.";
+        showToast(errorMessage, 'error');
+        window.location.hash = '#/cliente/series'; // Go back to safety
+        return `<p>${errorMessage}</p>`;
+    }
+
+    const userResult = getCurrentUser();
+    const currentUser = userResult ? userResult.user : {};
+    const favorites = currentUser.favorites || [];
+    const isFavorited = favorites.includes(series.id);
 
     return `
       <div class="container">
@@ -109,6 +377,13 @@ function renderSeriesDetails(seriesId) {
             </div>
             <div class="details-info">
                 <h1>${series.name}</h1>
+                 <p><strong>Ano de Lançamento:</strong> ${series.releaseYear || 'N/A'}</p>
+                <div class="favorite-button-wrapper">
+                     <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${series.id}" aria-label="Marcar como favorito">
+                        <i class="fa-${isFavorited ? 'solid' : 'regular'} fa-heart"></i>
+                        <span>${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
+                    </button>
+                </div>
                 <p>${series.description}</p>
                 <h3>Temporadas</h3>
                 <div class="season-buttons">
@@ -117,7 +392,55 @@ function renderSeriesDetails(seriesId) {
                     `).join('')}
                 </div>
                 <div id="episodes-container"></div>
-                <div id="player-container-series"></div>
+                <div id="player-container-series" class="player-container" style="display: none;"></div>
+                <div id="fallback-player-series"></div>
+            </div>
+        </div>
+      </div>
+    `;
+}
+
+function renderAnimeDetails(animeId) {
+    const db = getDB();
+    const anime = (db.animes || []).find(s => s.id === animeId);
+    if (!anime) {
+        const errorMessage = "Erro ao carregar detalhes, item não encontrado.";
+        showToast(errorMessage, 'error');
+        window.location.hash = '#/cliente/animes'; // Go back to safety
+        return `<p>${errorMessage}</p>`;
+    }
+
+    const userResult = getCurrentUser();
+    const currentUser = userResult ? userResult.user : {};
+    const favorites = currentUser.favorites || [];
+    const isFavorited = favorites.includes(anime.id);
+
+    return `
+      <div class="container">
+        <button id="back-btn" class="btn btn-secondary btn-sm" style="margin-bottom:1rem;"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+        <div class="details-view">
+            <div class="details-cover">
+                <img src="${anime.cover}" alt="${anime.name}">
+            </div>
+            <div class="details-info">
+                <h1>${anime.name}</h1>
+                 <p><strong>Ano de Lançamento:</strong> ${anime.releaseYear || 'N/A'}</p>
+                <div class="favorite-button-wrapper">
+                     <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${anime.id}" aria-label="Marcar como favorito">
+                        <i class="fa-${isFavorited ? 'solid' : 'regular'} fa-heart"></i>
+                        <span>${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
+                    </button>
+                </div>
+                <p>${anime.description}</p>
+                <h3>Temporadas</h3>
+                <div class="season-buttons">
+                    ${anime.seasons.map(season => `
+                        <button class="btn btn-secondary btn-season" data-season="${season.seasonNumber}">Temporada ${season.seasonNumber}</button>
+                    `).join('')}
+                </div>
+                <div id="episodes-container"></div>
+                <div id="player-container-series" class="player-container" style="display: none;"></div>
+                <div id="fallback-player-series"></div>
             </div>
         </div>
       </div>
@@ -125,7 +448,7 @@ function renderSeriesDetails(seriesId) {
 }
 
 function updateView(container, path) {
-    const parts = path.split('/').filter(p => p); // cliente, filmes, ID
+    const parts = path.split('/').filter(p => p); // e.g., ['cliente', 'filmes', 'ID']
     let pageType = parts[1] || 'filmes';
     let itemId = parts[2] || null;
 
@@ -138,13 +461,26 @@ function updateView(container, path) {
             pageContent = renderMovieDetails(itemId);
         } else if (pageType === 'series') {
             pageContent = renderSeriesDetails(itemId);
+        } else if (pageType === 'animes') {
+            pageContent = renderAnimesPage(itemId);
+        } else {
+            const errorMessage = "Erro: Categoria de conteúdo inválida.";
+            showToast(errorMessage, 'error');
+            pageContent = `<p>${errorMessage}</p>`;
+            window.location.hash = '#/cliente/filmes';
         }
     } else {
         currentFilter = '';
+        currentPage = 1; // Reset page on navigation
+        const urlParams = new URLSearchParams(path.split('?')[1] || '');
+        currentCategory = urlParams.get('category') || 'todos';
+
         if (pageType === 'filmes') {
-            pageContent = renderMoviesPage();
+            pageContent = renderMoviesPage(container);
         } else if (pageType === 'series') {
-            pageContent = renderSeriesPage();
+            pageContent = renderSeriesPage(container);
+        } else if (pageType === 'animes') {
+            pageContent = renderAnimesPage(container);
         }
     }
 
@@ -153,37 +489,206 @@ function updateView(container, path) {
         <main class="page">
             ${pageContent}
         </main>
+        <button id="search-toggle-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <div class="mobile-search-overlay" id="mobile-search-overlay">
+            <input type="text" id="mobile-search-input" class="form-control" placeholder="Pesquisar...">
+        </div>
+        <div id="menu-overlay"></div>
+        <div id="slide-in-menu">
+            <a href="#/cliente/favoritos">Favoritos</a>
+            <a href="#/cliente/historico">Histórico</a>
+            <a href="#/cliente/perfil">Perfil</a>
+            <a href="#/cliente/configuracoes">Configurações</a>
+            <button id="slide-menu-logout-btn">Sair</button>
+        </div>
     `;
     
-    attachClientListeners();
-}
+    // Now that the content is in the DOM, render pagination if needed.
+     if (!itemId) {
+        const userResult = getCurrentUser();
+        const currentUser = userResult ? userResult.user : {};
+        const favorites = currentUser.favorites || [];
+        const db = getDB();
+        const items = pageType === 'filmes' ? db.movies : (pageType === 'series' ? db.series : (db.animes || []));
 
-function attachClientListeners() {
-    document.getElementById('logout-btn').addEventListener('click', () => {
-        document.dispatchEvent(new CustomEvent('logout'));
-    });
+        const filteredItems = items.filter(item => {
+            const matchesSearch = normalizeString(item.name).includes(normalizeString(currentFilter));
+            if (currentCategory === 'todos') return matchesSearch;
+            if (currentCategory === 'favoritos') return matchesSearch && favorites.includes(item.id);
+            // if (currentCategory === 'mais_assistidos' || currentCategory === 'recentes') return matchesSearch;
+            return matchesSearch && item.category === currentCategory;
+        });
 
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', e => {
-            currentFilter = e.target.value;
-            const pageType = currentView.type === 'series' ? 'series' : 'filmes';
-            window.location.hash = `#/cliente/${pageType}`;
+        const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+        renderPaginationControls(document.getElementById('pagination-container'), currentPage, totalPages, (newPage) => {
+            currentPage = newPage;
+            updateView(container, window.location.hash.slice(1).split('?')[0]);
         });
     }
 
-    document.querySelectorAll('.media-card').forEach(card => {
-        card.addEventListener('click', () => {
+    // This was missing, preventing interactions like clicking on media cards and favoriting.
+    attachClientListeners(container);
+}
+
+async function handleToggleFavorite(itemId, container) {
+    const userResult = getCurrentUser();
+    if (!userResult) return;
+
+    const { user, type } = userResult;
+    const db = getDB();
+    const userIndex = db.users[type].findIndex(u => u.username === user.username);
+    if (userIndex === -1) return;
+
+    const userFromDB = db.users[type][userIndex];
+    userFromDB.favorites = userFromDB.favorites || [];
+    const itemIndex = userFromDB.favorites.indexOf(itemId);
+
+    if (itemIndex > -1) {
+        userFromDB.favorites.splice(itemIndex, 1); // Unfavorite
+    } else {
+        userFromDB.favorites.push(itemId); // Favorite
+    }
+    
+    saveDB(db);
+
+    // Re-render the view to update all favorite icons and potentially the list if on "Favorites"
+    const currentHash = window.location.hash.slice(1);
+    if (currentHash.startsWith('/cliente/favoritos')) {
+        const { renderFavoritesPage } = await import('views/client/Favorites');
+        renderFavoritesPage(container);
+    } else {
+        updateView(container, currentHash);
+    }
+}
+
+function handleEpisodeClick(e) {
+    const link = e.target.dataset.link;
+    const playerContainer = document.getElementById('player-container-series');
+    const fallbackContainer = document.getElementById('fallback-player-series');
+    const embedUrl = getEmbedUrl(link);
+    
+    playerContainer.innerHTML = '';
+    fallbackContainer.innerHTML = '';
+    
+    if (embedUrl) {
+        playerContainer.innerHTML = `<iframe src="${embedUrl}" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+        playerContainer.style.display = 'block';
+    } else {
+        fallbackContainer.innerHTML = `<a href="${link}" target="_blank" class="btn btn-primary" style="margin-top:1rem;">Assistir Episódio em Nova Aba</a>`;
+        playerContainer.style.display = 'none';
+    }
+}
+
+export function renderClientPanel(container, path) {
+    updateView(container, path);
+}
+
+export function attachClientListeners(container, viewOptions = {}) {
+    const { pageType, id } = viewOptions;
+    const currentViewType = pageType || currentView.type;
+
+    const debouncedSearch = debounce(async (value) => {
+        currentFilter = value;
+        currentPage = 1; // Reset to first page on search
+        if (currentViewType === 'favoritos') {
+            const { renderFavoritesPage } = await import('views/client/Favorites');
+            renderFavoritesPage(container);
+        } else {
+            updateView(container, `#/cliente/${currentViewType}`);
+        }
+    }, 300);
+
+    attachCommonClientListeners(container, {
+        onSearch: (value) => {
+            debouncedSearch(value);
+        },
+        pageType: currentViewType
+    });
+
+    const headerFavIcon = document.getElementById('header-fav-icon');
+    if(headerFavIcon) {
+        headerFavIcon.addEventListener('click', () => {
+            const itemId = headerFavIcon.dataset.id;
+            handleHeaderFavoriteClick(itemId);
+        });
+    }
+
+    // Category Menu
+    const categoryToggle = document.getElementById('category-menu-toggle');
+    const categoryMenu = document.getElementById('category-menu');
+    if (categoryToggle && categoryMenu) {
+        categoryToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            categoryMenu.classList.toggle('show');
+        });
+        document.addEventListener('click', (e) => {
+            if (categoryMenu && !categoryMenu.contains(e.target) && !categoryToggle.contains(e.target)) {
+                categoryMenu.classList.remove('show');
+            }
+        });
+
+        const categorySearchInput = document.getElementById('category-search-input');
+        if (categorySearchInput) {
+            const debouncedCategorySearch = debounce((searchTerm) => {
+                const normalizedSearch = normalizeString(searchTerm);
+                document.querySelectorAll('#category-links-container .category-link').forEach(link => {
+                    const linkText = normalizeString(link.textContent);
+                    if (linkText.includes(normalizedSearch)) {
+                        link.style.display = 'flex';
+                    } else {
+                        link.style.display = 'none';
+                    }
+                });
+            }, 300);
+            categorySearchInput.addEventListener('input', (e) => {
+                debouncedCategorySearch(e.target.value);
+            });
+        }
+
+        document.querySelectorAll('.category-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const newCategory = e.target.dataset.category;
+                
+                if (currentViewType === 'animes') {
+                    currentAnimeSort = newCategory;
+                } else {
+                    currentCategory = newCategory;
+                }
+                
+                currentPage = 1; // Reset page
+                categoryMenu.classList.remove('show');
+                updateView(container, `#/cliente/${currentViewType}`);
+            });
+        });
+    }
+
+    document.querySelectorAll('.media-card').forEach(element => {
+        element.addEventListener('click', (e) => {
+            const card = e.currentTarget; // Use currentTarget to avoid issues with nested elements
             const id = card.dataset.id;
-            const type = card.dataset.type === 'series' ? 'series' : 'filmes';
-            window.location.hash = `#/cliente/${type}/${id}`;
+            if (id) {
+                window.location.hash = `#/player?id=${id}`;
+            }
+        });
+    });
+
+    document.querySelectorAll('.favorite-btn').forEach(button => {
+        button.addEventListener('click', async () => {
+            const itemId = button.dataset.id;
+            await handleToggleFavorite(itemId, container);
         });
     });
 
     const backBtn = document.getElementById('back-btn');
     if (backBtn) {
         backBtn.addEventListener('click', () => {
-            window.location.hash = `#/cliente/${currentView.type}`;
+            // A more robust back navigation
+            if(window.history.length > 2) {
+                window.history.back();
+            } else {
+                window.location.hash = `#/cliente/${currentView.type || 'filmes'}`;
+            }
         });
     }
 
@@ -196,7 +701,9 @@ function attachClientListeners() {
 
                 const seasonNumber = parseInt(e.target.dataset.season);
                 const db = getDB();
-                const series = db.series.find(s => s.id === currentView.id);
+                const series = currentView.type === 'animes' 
+                    ? (db.animes || []).find(s => s.id === currentView.id) 
+                    : db.series.find(s => s.id === currentView.id);
                 const season = series.seasons.find(s => s.seasonNumber === seasonNumber);
                 
                 const episodesContainer = document.getElementById('episodes-container');
@@ -216,19 +723,70 @@ function attachClientListeners() {
         // Auto-click first season
         if(seasonButtons[0]) seasonButtons[0].click();
     }
-}
-
-function handleEpisodeClick(e) {
-    const link = e.target.dataset.link;
-    const playerContainer = document.getElementById('player-container-series');
-    const embedUrl = getYoutubeEmbedUrl(link);
-    if(embedUrl) {
-        playerContainer.innerHTML = `<div class="player-container"><iframe src="${embedUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>`;
-    } else {
-        playerContainer.innerHTML = `<a href="${link}" target="_blank" class="btn btn-primary" style="margin-top:1rem;">Assistir Episódio em Nova Aba</a>`;
+    
+    // Check if iframe can load, otherwise show fallback
+    const playerIframe = document.querySelector('#player-container iframe');
+    if (playerIframe) {
+        playerIframe.addEventListener('error', () => {
+            const fallbackContainer = document.getElementById('fallback-player');
+            fallbackContainer.innerHTML = `<a href="${playerIframe.src}" target="_blank" class="btn btn-primary">Não foi possível carregar o player. Assistir em Nova Aba.</a>`;
+            playerIframe.parentElement.style.display = 'none';
+        });
+        // A more reliable method is needed for cross-origin iframes, but this is a simple attempt.
     }
 }
 
-export function renderClientPanel(container, path) {
-    updateView(container, path);
+export function attachCommonClientListeners(container, options = {}) {
+    document.getElementById('logout-btn')?.addEventListener('click', () => {
+        document.dispatchEvent(new CustomEvent('logout'));
+    });
+
+    // Slide-in Menu
+    const menuToggle = document.getElementById('mobile-menu-toggle-bottom');
+    const slideMenu = document.getElementById('slide-in-menu');
+    const menuOverlay = document.getElementById('menu-overlay');
+    const closeMenu = () => {
+        slideMenu.classList.remove('open');
+        menuOverlay.classList.remove('show');
+    };
+    if (menuToggle) {
+        menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            slideMenu.classList.toggle('open');
+            menuOverlay.classList.toggle('show');
+        });
+    }
+    menuOverlay.addEventListener('click', closeMenu);
+    document.getElementById('slide-menu-logout-btn').addEventListener('click', () => {
+        closeMenu();
+        document.dispatchEvent(new CustomEvent('logout'));
+    });
+
+    // Mobile search
+    const searchToggleBtn = document.getElementById('search-toggle-btn');
+    const mobileSearchOverlay = document.getElementById('mobile-search-overlay');
+    const mobileSearchInput = document.getElementById('mobile-search-input');
+    
+    if (searchToggleBtn && mobileSearchOverlay && mobileSearchInput) {
+        searchToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mobileSearchOverlay.classList.toggle('show');
+            if (mobileSearchOverlay.classList.contains('show')) {
+                mobileSearchInput.focus();
+            }
+        });
+
+        mobileSearchOverlay.addEventListener('click', (e) => {
+            if (e.target === mobileSearchOverlay) {
+                mobileSearchOverlay.classList.remove('show');
+            }
+        });
+        
+        mobileSearchInput.addEventListener('input', e => options.onSearch(e.target.value));
+    }
+
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', e => options.onSearch(e.target.value));
+    }
 }
