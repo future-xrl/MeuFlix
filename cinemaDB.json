@@ -11,8 +11,8 @@
         "username": "12345",
         "password": "67890",
         "description": "Cliente de Exemplo",
-        "createdAt": "2025-09-04T06:29:47.861Z",
-        "expiresAt": "2025-10-05T06:29:47.861Z",
+        "createdAt": "2025-09-04T06:41:17.887Z",
+        "expiresAt": "2025-10-05T06:41:17.887Z",
         "status": "válido",
         "favorites": []
       },
@@ -34,23 +34,13 @@
         "username": "54321",
         "password": "09876",
         "description": "Teste de Exemplo",
-        "createdAt": "2025-09-04T06:29:47.861Z",
-        "expiresAt": "2025-09-11T06:29:47.861Z",
+        "createdAt": "2025-09-04T06:41:17.887Z",
+        "expiresAt": "2025-09-11T06:41:17.887Z",
         "status": "ativo"
       }
     ]
   },
   "movies": [
-    {
-      "id": "movie_1756967387861",
-      "name": "Filme Exemplo",
-      "description": "Esta é a descrição de um filme de exemplo para demonstração. A trama é sobre aventura e descobertas.",
-      "cover": "https://via.placeholder.com/400x600.png/222/f5f5f5?text=Filme+Exemplo",
-      "link": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      "category": "aventura",
-      "releaseYear": 2023,
-      "createdAt": "2023-10-26T10:00:00.000Z"
-    },
     {
       "id": "movie_17569347626667qmp21dob",
       "name": "Manas",
@@ -61,7 +51,7 @@
   ],
   "series": [
     {
-      "id": "series_1756967387861",
+      "id": "series_1756968077887",
       "name": "Série Exemplo",
       "description": "Resumo da série de exemplo com uma temporada e um episódio.",
       "cover": "https://via.placeholder.com/400x600.png/222/f5f5f5?text=Série+Exemplo",
@@ -83,7 +73,7 @@
   ],
   "animes": [
     {
-      "id": "anime_1756967387861",
+      "id": "anime_1756968077887",
       "name": "Anime Exemplo",
       "description": "Resumo do anime de exemplo com uma temporada e um episódio para demonstração.",
       "cover": "https://via.placeholder.com/400x600.png/222/f5f5f5?text=Anime+Exemplo",
