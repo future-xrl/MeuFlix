@@ -1,6 +1,6 @@
 const DB_NAME = 'cinemaDB';
-/* @tweakable [The URL of the remote JSON database file] */
-const REMOTE_DB_URL = 'https://future-xrl.github.io/MeuFlix/cinemaDB.json';
+/* @tweakable [The URL of the remote JSON database file from raw GitHub content] */
+const REMOTE_DB_URL = 'https://raw.githubusercontent.com/future-xrl/MeuFlix/main/cinemaDB.json';
 
 const initialData = {
     "config": { "expirationDays": 31 },

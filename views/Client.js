@@ -265,7 +265,12 @@ function renderAnimesPage(container) {
         updateView(container, window.location.hash.slice(1));
     };
     
-    let animes = [...(db.animes || [])];
+    // Ensure animes data exists and is an array before processing
+    let animes = Array.isArray(db.animes) ? [...db.animes] : [];
+    if (animes.length === 0) {
+        console.log("Renderizando categoria: animes (vazio)");
+    }
+    
     let showedSortToast = false;
 
     // Apply sorting
@@ -372,7 +377,7 @@ function renderMovieDetails(movieId) {
                 <div class="favorite-button-wrapper">
                     <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${movie.id}" onclick="toggleFavorite('${movie.id}', this)" aria-label="Marcar como favorito">
                         <span class="fav-icon">${isFavorited ? '❤️' : '🤍'}</span>
-                        <span>${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
+                        <span id="favoriteText_${movie.id}">${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
                     </button>
                 </div>
                 <p>${movie.description}</p>
@@ -417,7 +422,7 @@ function renderSeriesDetails(seriesId) {
                 <div class="favorite-button-wrapper">
                      <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${series.id}" onclick="toggleFavorite('${series.id}', this)" aria-label="Marcar como favorito">
                         <span class="fav-icon">${isFavorited ? '❤️' : '🤍'}</span>
-                        <span>${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
+                        <span id="favoriteText_${series.id}">${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
                     </button>
                 </div>
                 <p>${series.description}</p>
@@ -464,7 +469,7 @@ function renderAnimeDetails(animeId) {
                 <div class="favorite-button-wrapper">
                      <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${anime.id}" onclick="toggleFavorite('${anime.id}', this)" aria-label="Marcar como favorito">
                         <span class="fav-icon">${isFavorited ? '❤️' : '🤍'}</span>
-                        <span>${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
+                        <span id="favoriteText_${anime.id}">${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
                     </button>
                 </div>
                 <p>${anime.description}</p>
@@ -498,7 +503,7 @@ function updateView(container, path) {
         } else if (pageType === 'series') {
             pageContent = renderSeriesDetails(itemId);
         } else if (pageType === 'animes') {
-            pageContent = renderAnimesPage(itemId);
+            pageContent = renderAnimeDetails(itemId);
         } else {
             const errorMessage = "Erro: Categoria de conteúdo inválida.";
             showToast(errorMessage, 'error');
@@ -593,12 +598,13 @@ function renderEmptyPage(container, path) {
         ${renderHeader(pageType)}
         <main class="page">
             <div class="container catalog-container-empty">
-                <p>Ocorreu um erro ao carregar esta categoria. Tente novamente mais tarde.</p>
+                <p>Nenhum item encontrado nesta categoria ou ocorreu um erro ao carregar.</p>
             </div>
         </main>
         <div id="menu-overlay"></div>
         <div id="slide-in-menu">
             <a href="#/cliente/favoritos">${t('favorites')}</a>
+            <a href="#/cliente/historico">${t('history')}</a>
             <a href="#/cliente/perfil">${t('profile')}</a>
             <a href="#/cliente/configuracoes-usuario">${t('user_settings')}</a>
             <button id="slide-menu-logout-btn">${t('logout')}</button>
@@ -614,12 +620,14 @@ export function renderClientPanel(container, path) {
         window.location.hash = '/login';
         return;
     }
+    const db = getDB();
+    console.log("Carregado cinemaDB.json: ", JSON.stringify(db));
     console.log('Renderizando página:', window.location.hash, 'User:', session.username);
     try {
-        console.log(`Carregando categoria: ${path.split('?')[0]}`);
+        console.log(`Renderizando categoria: ${path.split('?')[0]}`);
         updateView(container, path);
     } catch(e) {
-        console.log('Erro na categoria: ', e);
+        console.log('Erro na renderização: ', e);
         renderEmptyPage(container, path);
     }
 }
