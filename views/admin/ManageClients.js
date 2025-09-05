@@ -4,6 +4,7 @@ import { renderLayout } from 'views/admin/Layout';
 
 let currentPage = 1;
 const ITEMS_PER_PAGE = 10;
+let currentSearchTerm = '';
 
 function renderClientRow(client) {
     const now = new Date();
@@ -134,6 +135,12 @@ function attachManageClientsListeners(onPageChange) {
         }
     });
 
+    document.getElementById('search-client').addEventListener('input', e => {
+        currentSearchTerm = e.target.value;
+        currentPage = 1;
+        onPageChange(1);
+    });
+
     document.addEventListener('click', e => {
         if (!e.target.matches('.action-toggle')) {
             document.querySelectorAll('.action-dropdown.show').forEach(dd => dd.classList.remove('show'));
@@ -151,7 +158,10 @@ function updateManageClientsView(container, page = 1) {
         return c.status === 'ativo' || expiresAt < now;
     });
 
-    const filteredClients = allClients;
+    const filteredClients = allClients.filter(client => {
+        const searchTerm = normalizeString(currentSearchTerm);
+        return normalizeString(client.username).includes(searchTerm) || normalizeString(client.description).includes(searchTerm);
+    });
 
     const totalPages = Math.ceil(filteredClients.length / ITEMS_PER_PAGE);
     const paginatedClients = filteredClients.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -159,6 +169,9 @@ function updateManageClientsView(container, page = 1) {
     const content = `
         <div class="card">
             <h2 class="card-title">Gerenciar Clientes</h2>
+            <div class="form-group">
+                <input type="text" id="search-client" class="form-control" placeholder="Buscar por usuário ou descrição..." value="${currentSearchTerm}">
+            </div>
             <div class="table-wrapper">
                 <table class="styled-table" id="clients-table">
                     <thead>
@@ -197,5 +210,6 @@ function updateManageClientsView(container, page = 1) {
 
 export function renderManageClientsPage(container) {
     currentPage = 1;
+    currentSearchTerm = '';
     updateManageClientsView(container, 1);
 }

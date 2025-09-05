@@ -4,6 +4,7 @@ import { renderHeader, renderMediaGrid, attachClientListeners } from 'views/Clie
 
 let currentPage = 1;
 const ITEMS_PER_PAGE = 20;
+let currentFilter = '';
 
 export function renderFavoritesPage(container) {
     const session = JSON.parse(localStorage.getItem('session'));
@@ -33,7 +34,9 @@ export function renderFavoritesPage(container) {
 
     const favoriteItems = allMedia.filter(item => userFavorites.includes(item.id));
     
-    const filteredItems = favoriteItems;
+    const filteredItems = favoriteItems.filter(item => 
+        normalizeString(item.name).includes(normalizeString(currentFilter))
+    );
 
     const onPageChange = (newPage) => {
         currentPage = newPage;
@@ -46,6 +49,10 @@ export function renderFavoritesPage(container) {
         <div class="container">
             <div class="catalog-header">
                 <h1>Meus Favoritos</h1>
+                <div class="search-bar desktop-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="search-input" class="form-control" placeholder="Pesquisar nos favoritos..." value="${currentFilter}">
+                </div>
                 <span class="total-count">${filteredItems.length} itens</span>
             </div>
             ${renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
@@ -57,9 +64,14 @@ export function renderFavoritesPage(container) {
         <main class="page">
             ${pageContent}
         </main>
+        <button id="search-toggle-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <div class="mobile-search-overlay" id="mobile-search-overlay">
+            <input type="text" id="mobile-search-input" class="form-control" placeholder="Pesquisar...">
+        </div>
         <div id="menu-overlay"></div>
         <div id="slide-in-menu">
             <a href="#/cliente/favoritos" class="active">Favoritos</a>
+            <a href="#/cliente/historico">Histórico</a>
             <a href="#/cliente/perfil">Perfil</a>
             <a href="#/cliente/configuracoes">Configurações</a>
             <button id="slide-menu-logout-btn">Sair</button>
@@ -69,6 +81,11 @@ export function renderFavoritesPage(container) {
     renderPaginationControls(document.getElementById('pagination-container'), currentPage, totalPages, onPageChange);
 
     attachClientListeners(container, {
+        onSearch: (value) => {
+            currentFilter = value;
+            currentPage = 1;
+            renderFavoritesPage(container);
+        },
         pageType: 'favoritos',
         id: null
     });

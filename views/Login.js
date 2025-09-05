@@ -6,7 +6,7 @@ export function renderLogin(container) {
     container.innerHTML = `
         <div class="login-container">
             <div class="login-form">
-                <h1 class="logo">Meuflix</h1>
+                <h1>🎬 CinemaStream</h1>
                 <form id="login-form">
                     <div class="form-group">
                         <label for="username">Usuário</label>

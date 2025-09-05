@@ -212,7 +212,7 @@ function renderItemContent(item) {
         playerHTML = '<div class="player-placeholder">Selecione um episódio para assistir.</div>';
         seasonHTML = `
             <h3>Temporadas</h3>
-            <div class="season-buttons scrollable-row">
+            <div class="season-buttons">
                 ${item.seasons.map(season => `
                     <button class="btn btn-secondary btn-season" data-season="${season.seasonNumber}">Temporada ${season.seasonNumber}</button>
                 `).join('')}
@@ -286,6 +286,7 @@ export function renderPlayerPage(container) {
         <div id="menu-overlay"></div>
         <div id="slide-in-menu">
             <a href="#/cliente/favoritos">Favoritos</a>
+            <a href="#/cliente/historico">Histórico</a>
             <a href="#/cliente/perfil">Perfil</a>
             <a href="#/cliente/configuracoes">Configurações</a>
             <button id="slide-menu-logout-btn">Sair</button>

@@ -6,6 +6,7 @@ let countdownIntervals = [];
 let currentPage = 1;
 /* @tweakable [Number of items to display per page in the admin tables] */
 const ITEMS_PER_PAGE = 10;
+let currentSearchTerm = '';
 
 function renderTestRow(test) {
     const expiresAt = new Date(test.expiresAt);
@@ -104,6 +105,12 @@ function attachMyTestsListeners(onPageChange) {
             });
             target.parentElement.classList.toggle('show');
         }
+    });
+
+    document.getElementById('search-test')?.addEventListener('input', e => {
+        currentSearchTerm = e.target.value;
+        currentPage = 1;
+        onPageChange(1);
     });
 
     document.addEventListener('click', e => {
@@ -225,7 +232,10 @@ function updateMyTestsView(container, page = 1) {
     const db = getDB();
     const allTests = db.users?.tests || [];
     
-    const filteredTests = allTests;
+    const filteredTests = allTests.filter(test => {
+        const searchTerm = currentSearchTerm.toLowerCase();
+        return test.username.toLowerCase().includes(searchTerm) || test.description.toLowerCase().includes(searchTerm);
+    });
 
     const totalPages = Math.ceil(filteredTests.length / ITEMS_PER_PAGE);
     const paginatedTests = filteredTests.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -233,6 +243,9 @@ function updateMyTestsView(container, page = 1) {
     const content = `
          <div class="card">
             <h2 class="card-title">Meus Testes</h2>
+             <div class="form-group">
+                <input type="text" id="search-test" class="form-control" placeholder="Buscar por usuário ou descrição..." value="${currentSearchTerm}">
+            </div>
              <div class="table-wrapper">
                 <table class="styled-table" id="tests-table">
                      <thead>
@@ -271,5 +284,6 @@ function updateMyTestsView(container, page = 1) {
 
 export function renderMyTestsPage(container) {
     currentPage = 1;
+    currentSearchTerm = '';
     updateMyTestsView(container, 1);
 }

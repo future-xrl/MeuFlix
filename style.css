@@ -28,7 +28,6 @@ html, body {
 
 body.client-view {
     padding-bottom: 70px; /* Space for mobile bottom nav */
-    padding-top: 135px; /* Space for sticky header */
 }
 
 #app {
@@ -44,20 +43,6 @@ a {
 
 a:hover {
     text-decoration: underline;
-}
-
-/* --- Logo --- */
-.logo {
-    /* @tweakable [Família da fonte para o logo do site] */
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    /* @tweakable [Peso da fonte para o logo do site] */
-    font-weight: 800;
-    /* @tweakable [Cor do logo do site] */
-    color: var(--primary-color);
-    text-transform: uppercase;
-    /* @tweakable [Espaçamento entre letras para o logo do site] */
-    letter-spacing: 1px;
-    font-size: 1.5rem;
 }
 
 /* --- Containers & Layout --- */
@@ -79,17 +64,7 @@ a:hover {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    /* @tweakable [URL da imagem de fundo da página de login] */
-    background-image: url('https://cdn.telaviva.com.br/wp-content/uploads/2022/05/streaming.jpg');
-    /* @tweakable [Posicionamento da imagem de fundo na página de login] */
-    background-position: center center;
-    /* @tweakable [Tamanho da imagem de fundo na página de login] */
-    background-size: cover;
-    /* @tweakable [Repetição da imagem de fundo na página de login] */
-    background-repeat: no-repeat;
-    /* @tweakable [Sobreposição escura sobre a imagem de fundo da página de login] */
-    background-color: rgba(0,0,0,0.4);
-    background-blend-mode: overlay;
+    background: radial-gradient(circle, rgba(0,0,0,0.8) 0%, rgba(0,0,0,1) 100%);
 }
 
 .login-form {
@@ -100,12 +75,6 @@ a:hover {
     width: 100%;
     max-width: 400px;
     animation: fadeIn 0.5s ease-in-out;
-}
-
-.login-form .logo {
-    text-align: center;
-    margin-bottom: 2rem;
-    font-size: 2rem;
 }
 
 .login-form h1 {
@@ -341,8 +310,6 @@ textarea.form-control {
     border: none;
     color: var(--text-color);
     cursor: pointer;
-    width: 30px;
-    height: 30px;
 }
 
 #logout-btn-fixed {
@@ -384,23 +351,10 @@ textarea.form-control {
     background-color: var(--medium-dark-color);
     padding: 1rem 5%;
     display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    box-shadow: var(--box-shadow);
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 1000;
-}
-
-.header-top-row {
-    display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
+    box-shadow: var(--box-shadow);
 }
-
 .client-header .logo {
     font-size: 1.5rem;
     font-weight: bold;
@@ -409,9 +363,6 @@ textarea.form-control {
 .client-header nav.desktop-nav {
     display: flex;
     gap: 1rem;
-    justify-content: center;
-    width: 100%;
-    flex-wrap: wrap;
 }
 .client-header .btn-nav {
     background: linear-gradient(to right, #4facfe, #00f2fe);
@@ -488,15 +439,7 @@ textarea.form-control {
     font-weight: bold;
     transition: color 0.2s ease;
 }
-.client-header nav.desktop-nav a:not(.btn-nav) {
-    color: var(--text-muted-color);
-    margin: 0 1rem;
-    font-weight: bold;
-    transition: color 0.2s ease;
-}
-
-.client-header nav.desktop-nav a:not(.btn-nav):hover, 
-.client-header nav.desktop-nav a:not(.btn-nav).active {
+.client-header nav a:hover, .client-header nav a.active {
     color: var(--text-color);
 }
 .client-header .header-actions button {
@@ -522,89 +465,6 @@ textarea.form-control {
 
 .mobile-nav {
     display: none;
-}
-
-/* --- Search Bar --- */
-
-/** @tweakable [Styling for the relocated search bar container in the desktop navigation] */
-.nav-search-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    flex-grow: 1; /* Allow it to take up space */
-    min-width: 200px;
-    max-width: 350px; /* Limit max width */
-    margin-left: 1rem; /* Space from other nav items */
-}
-
-.search-bar-wrapper {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.search-bar-container {
-    /** @tweakable [Styling for the main search bar container] */
-    position: relative;
-    width: 100%;
-    max-width: 600px;
-}
-
-#client-search-bar {
-    /** @tweakable [Styling for the search input field] */
-    width: 100%;
-    padding: 10px 15px 10px 40px; /* Left padding for icon */
-    border-radius: 20px; /* Rounded pill shape */
-    border: 1px solid var(--light-dark-color);
-    background-color: var(--dark-color);
-    color: var(--text-color);
-    font-size: 0.9rem;
-    transition: all 0.2s ease-in-out;
-}
-
-#client-search-bar:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.3);
-}
-
-#client-search-bar::placeholder {
-    color: var(--text-muted-color);
-}
-
-.search-icon {
-    /** @tweakable [Styling for the magnifying glass icon in the search bar] */
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted-color);
-    pointer-events: none; /* Make icon unclickable */
-}
-
-/* --- Search Results --- */
-#search-results-container {
-    padding: 1rem 0;
-    animation: fadeIn 0.5s ease-in-out;
-}
-
-.no-results-message {
-    text-align: center;
-    color: var(--text-muted-color);
-    font-size: 1.2rem;
-    padding: 3rem 0;
-}
-
-.search-result-group {
-    margin-bottom: 2rem;
-}
-
-.search-result-group-title {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--primary-color);
-    color: var(--text-color);
 }
 
 /* --- Cards --- */
@@ -641,7 +501,6 @@ textarea.form-control {
     display: flex;
     align-items: center;
     gap: 1.5rem;
-    margin-left: auto;
 }
 
 .total-count {
@@ -861,38 +720,23 @@ textarea.form-control {
     border-color: var(--primary-color);
 }
 
-/* Horizontal Scrollable Buttons for Seasons/Episodes */
-.scrollable-row {
-    /** @tweakable [Styling for horizontally scrollable button containers] */
-    display: flex;
-    overflow-x: auto;
-    padding-bottom: 10px; /* Space for scrollbar */
-    margin-bottom: 10px;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-    scrollbar-width: thin; /* Firefox */
-    scrollbar-color: var(--light-dark-color) var(--dark-color); /* Firefox */
+/* Search Bar */
+.search-bar {
+    position: relative;
+    max-width: 500px;
 }
-.scrollable-row::-webkit-scrollbar {
-    height: 5px;
+.search-bar.desktop-search {
+    /* Styles for desktop search bar if needed */
 }
-.scrollable-row::-webkit-scrollbar-track {
-    background: var(--dark-color);
+.search-bar .form-control {
+    padding-left: 2.5rem;
 }
-.scrollable-row::-webkit-scrollbar-thumb {
-    background-color: var(--light-dark-color);
-    border-radius: 6px;
-}
-
-.scrollable-row .btn {
-    flex-shrink: 0; /* Prevent buttons from shrinking */
-    margin-right: 10px;
-    width: auto;
-    border-radius: 20px;
-}
-
-#episodes-container {
-    /** @tweakable [Bottom margin for the episode container to avoid overlap with mobile nav] */
-    margin-bottom: 80px; /* approx 4 lines of space */
+.search-bar i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted-color);
 }
 
 /* --- Player Page --- */
@@ -1324,15 +1168,11 @@ textarea.form-control {
     color: var(--text-muted-color);
 }
 
-/* Responsive Design */
+/* --- Responsive Design --- */
 @media (max-width: 768px) {
     body {
         font-size: 14px;
         -webkit-text-size-adjust: 100%; /* Prevent font scaling on iOS */
-    }
-
-    body.client-view {
-        padding-top: 120px; /* Adjust for mobile sticky header */
     }
     
     .player-wrapper iframe, .player-wrapper video, .player-placeholder {
@@ -1526,14 +1366,11 @@ textarea.form-control {
         display: none;
     }
 
-    .search-bar {
-        flex-grow: 1;
-    }
     .search-bar.desktop-search {
         display: none;
     }
     #search-toggle-btn {
-        display: none;
+        display: block;
     }
 
     .mobile-nav {
@@ -1549,7 +1386,7 @@ textarea.form-control {
         box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
         z-index: 1000;
     }
-    .mobile-nav a, .mobile-nav button {
+    .mobile-nav a {
         display: flex;
         flex-direction: column;
         align-items: center;

@@ -1,9 +1,6 @@
 import { getDB, saveDB } from 'db';
 import { normalizeString, getEmbedUrl, showToast, MEDIA_CATEGORIES, renderPaginationControls, debounce } from 'utils';
 
-/** @tweakable [Set to true to enable the client-side search functionality] */
-const ENABLE_SEARCH = true;
-
 let currentFilter = '';
 let currentCategory = 'todos';
 /* @tweakable [Default sort order for animes] */
@@ -36,89 +33,6 @@ function getCurrentUser() {
     if (user) return { user, type: 'tests' };
 
     return null;
-}
-
-/**
- * @tweakable [Delay in milliseconds for the search input debouncing]
- */
-const SEARCH_DEBOUNCE_DELAY = 300;
-
-async function handleSearch(searchTerm) {
-    const searchResultsContainer = document.getElementById('search-results-container');
-    const catalogContainer = document.getElementById('catalog-container');
-
-    if (!searchResultsContainer || !catalogContainer) return;
-
-    if (!searchTerm.trim()) {
-        searchResultsContainer.innerHTML = '';
-        searchResultsContainer.style.display = 'none';
-        catalogContainer.style.display = 'block';
-        return;
-    }
-
-    catalogContainer.style.display = 'none';
-    searchResultsContainer.style.display = 'block';
-    searchResultsContainer.innerHTML = '<div class="loading-spinner" style="height: 200px;">Buscando...</div>';
-
-
-    const db = getDB();
-    const normalizedSearch = normalizeString(searchTerm);
-
-    const allMedia = [
-        ...db.movies.map(m => ({ ...m, mediaType: 'Filme', type: 'filmes' })),
-        ...db.series.map(s => ({ ...s, mediaType: 'Série', type: 'series' })),
-        ...(db.animes || []).map(a => ({ ...a, mediaType: 'Anime', type: 'animes' }))
-    ];
-
-    const results = allMedia.filter(item => normalizeString(item.name).includes(normalizedSearch));
-
-    // Prioritize results based on current page
-    results.sort((a, b) => {
-        const aIsPriority = a.type === currentView.type;
-        const bIsPriority = b.type === currentView.type;
-        if (aIsPriority && !bIsPriority) return -1;
-        if (!aIsPriority && bIsPriority) return 1;
-        return 0;
-    });
-
-    if (results.length === 0) {
-        searchResultsContainer.innerHTML = `<p class="no-results-message">Nenhum resultado encontrado. Tente outro termo de busca.</p>`;
-        return;
-    }
-
-    const groupedResults = results.reduce((acc, item) => {
-        const key = item.mediaType;
-        if (!acc[key]) {
-            acc[key] = [];
-        }
-        acc[key].push(item);
-        return acc;
-    }, {});
-
-    // Ensure consistent order of groups
-    const groupOrder = ['Filme', 'Série', 'Anime'];
-    let resultsHTML = '';
-    for (const groupName of groupOrder) {
-        if (groupedResults[groupName]) {
-            resultsHTML += `
-                <div class="search-result-group">
-                    <h2 class="search-result-group-title">${groupName}s</h2>
-                    <div class="catalog-grid">
-                        ${groupedResults[groupName].map(item => `
-                            <div class="media-card" data-id="${item.id}" onclick="window.location.hash='#/player?id=${item.id}'">
-                                <div class="cover-container">
-                                    ${item.cover ? `<img src="${item.cover}" alt="${item.name}" loading="lazy">` : `<div class="placeholder-cover"><i class="fa-solid fa-film"></i></div>`}
-                                </div>
-                                <div class="media-card-title">${item.name}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-    }
-    
-    searchResultsContainer.innerHTML = resultsHTML;
 }
 
 async function handleHeaderFavoriteClick(itemId) {
@@ -178,25 +92,13 @@ export function renderHeader(activeLink, currentItem = null) {
 
     return `
         <header class="client-header">
-            <div class="header-top-row">
-                <div class="logo">Meuflix</div>
-                <div class="header-actions">
-                    <span class="welcome-user">${welcomeMessage}</span>
-                    <button id="logout-btn" class="btn btn-secondary btn-sm">Sair <i class="fa-solid fa-right-from-bracket"></i></button>
-                </div>
-                <button id="client-menu-toggle" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
-            </div>
+            <div class="logo">🎬 CinemaStream</div>
             <nav class="desktop-nav">
                 <a href="#/cliente/filmes" class="btn-nav ${activeLink === 'filmes' ? 'active' : ''}"><i class="fa-solid fa-film"></i> Filmes</a>
                 <a href="#/cliente/series" class="btn-nav ${activeLink === 'series' ? 'active' : ''}"><i class="fa-solid fa-tv"></i> Séries</a>
                 <a href="#/cliente/animes" class="btn-nav ${activeLink === 'animes' ? 'active' : ''}"><i class="fa-solid fa-dragon"></i> Animes</a>
                 <a href="#/cliente/favoritos" class="btn-nav ${activeLink === 'favoritos' ? 'active' : ''}"><i class="fa-solid fa-heart"></i> Favoritos</a>
-                 ${ENABLE_SEARCH ? `
-                    <div class="nav-search-container">
-                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                        <input type="search" id="client-search-bar" placeholder="Buscar Filmes, Séries ou Animes" aria-label="Buscar conteúdo">
-                    </div>
-                ` : ''}
+                <a href="#/cliente/historico" class="btn-nav ${activeLink === 'historico' ? 'active' : ''}"><i class="fa-solid fa-history"></i> Histórico</a>
                  ${currentItem ? `
                     <div class="header-favorite-container">
                         <i id="header-fav-icon" class="fa-solid fa-heart header-fav-icon ${isFavorited ? 'favorited' : ''}" data-id="${currentItem.id}"></i>
@@ -206,6 +108,11 @@ export function renderHeader(activeLink, currentItem = null) {
                     </div>
                 ` : ''}
             </nav>
+            <div class="header-actions">
+                <span class="welcome-user">${welcomeMessage}</span>
+                <button id="logout-btn" class="btn btn-secondary btn-sm">Sair <i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+            <button id="client-menu-toggle" aria-label="Abrir menu"><i class="fa-solid fa-bars"></i></button>
         </header>
          <nav class="mobile-nav">
             <a href="#/cliente/filmes" class="${activeLink === 'filmes' ? 'active' : ''}">
@@ -223,6 +130,10 @@ export function renderHeader(activeLink, currentItem = null) {
             <a href="#/cliente/favoritos" class="${activeLink === 'favoritos' ? 'active' : ''}">
                 <i class="fa-solid fa-heart"></i>
                 <span>Favoritos</span>
+            </a>
+            <a href="#/cliente/historico" class="${activeLink === 'historico' ? 'active' : ''}">
+                <i class="fa-solid fa-history"></i>
+                <span>Histórico</span>
             </a>
             <button id="mobile-menu-toggle-bottom" class="mobile-nav-menu-btn">
                 <i class="fa-solid fa-bars"></i>
@@ -269,19 +180,15 @@ function renderCatalogPage(title, items, type, onPageChange) {
     const userResult = getCurrentUser();
     const currentUser = userResult ? userResult.user : {};
     const favorites = currentUser?.favorites || [];
-    
-    /** @tweakable [Set to true to enable category filtering on catalog pages] */
-    const ENABLE_CATEGORY_FILTER = false;
 
     const filteredItems = items.filter(item => {
-        const searchTerm = normalizeString(currentFilter);
-        const matchesSearch = searchTerm === '' || 
-            normalizeString(item.name).includes(searchTerm) ||
-            normalizeString(item.description).includes(searchTerm) ||
-            normalizeString(MEDIA_CATEGORIES.find(c => c.key === item.category)?.name || '').includes(searchTerm);
+        const matchesSearch = normalizeString(item.name).includes(normalizeString(currentFilter));
         
-        if (!ENABLE_CATEGORY_FILTER || currentCategory === 'todos') return matchesSearch;
+        if (currentCategory === 'todos') return matchesSearch;
         if (currentCategory === 'favoritos') return matchesSearch && favorites.includes(item.id);
+        // "Mais assistidos" and "Adicionados Recentemente" would require more data (timestamps, view counts)
+        // For now, we'll just filter by category.
+        if (currentCategory === 'mais_assistidos' || currentCategory === 'recentes') return matchesSearch;
         
         return matchesSearch && item.category === currentCategory;
     });
@@ -296,15 +203,12 @@ function renderCatalogPage(title, items, type, onPageChange) {
         <div class="container">
             <div class="catalog-header">
                 <h1>${title}</h1>
-                 ${ENABLE_SEARCH ? `
-                 <div class="search-bar desktop-search" style="display: none;">
+                 <div class="search-bar desktop-search">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" id="search-input" class="form-control" placeholder="Pesquisar ${title}..." value="${currentFilter}">
                 </div>
-                ` : ''}
                 <div class="catalog-info">
                     <span class="total-count">Todos ${items.length}</span>
-                    ${ENABLE_CATEGORY_FILTER ? `
                     <div class="category-menu-wrapper">
                         <button class="category-menu-toggle" id="category-menu-toggle" aria-label="Abrir menu de categorias">
                             <i class="fa-solid fa-bars"></i>
@@ -316,7 +220,6 @@ function renderCatalogPage(title, items, type, onPageChange) {
                              </div>
                         </div>
                     </div>
-                    ` : ''}
                 </div>
             </div>
             ${renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
@@ -382,13 +285,7 @@ function renderAnimesPage(container) {
             break;
     }
 
-    const filteredItems = animes.filter(item => {
-        const searchTerm = normalizeString(currentFilter);
-        return searchTerm === '' ||
-            normalizeString(item.name).includes(searchTerm) ||
-            normalizeString(item.description).includes(searchTerm) ||
-            normalizeString(MEDIA_CATEGORIES.find(c => c.key === item.category)?.name || '').includes(searchTerm);
-    });
+    const filteredItems = animes.filter(item => normalizeString(item.name).includes(normalizeString(currentFilter)));
     
     const sortOptions = {
         'alfabetica': { name: 'Ordem Alfabética', icon: 'fa-solid fa-sort-alpha-down' },
@@ -397,23 +294,17 @@ function renderAnimesPage(container) {
         'lancamento': { name: 'Lançamento', icon: 'fa-solid fa-calendar-days' },
         'populares': { name: 'Mais Populares', icon: 'fa-solid fa-fire' }
     };
-    
-    /** @tweakable [Set to true to enable the sort menu on the animes page] */
-    const ENABLE_ANIME_SORT = false;
 
     const content = `
         <div class="container">
             <div class="catalog-header">
                 <h1>Animes</h1>
-                 ${ENABLE_SEARCH ? `
-                 <div class="search-bar desktop-search" style="display: none;">
+                 <div class="search-bar desktop-search">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" id="search-input" class="form-control" placeholder="Pesquisar Animes..." value="${currentFilter}">
                 </div>
-                ` : ''}
                 <div class="catalog-info">
                     <span class="total-count">Todos ${animes.length}</span>
-                    ${ENABLE_ANIME_SORT ? `
                     <div class="category-menu-wrapper">
                         <button class="anime-sort-button" id="category-menu-toggle" aria-label="Abrir menu de ordenação">
                             ${sortOptions[currentAnimeSort]?.name || 'Ordenar'}
@@ -422,7 +313,6 @@ function renderAnimesPage(container) {
                              ${Object.entries(sortOptions).map(([key, value]) => `<a href="#" class="category-link ${currentAnimeSort === key ? 'active' : ''}" data-category="${key}" tabindex="0"><i class="${value.icon}"></i> ${value.name}</a>`).join('')}
                         </div>
                     </div>
-                    ` : ''}
                 </div>
             </div>
             ${renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
@@ -586,7 +476,7 @@ function updateView(container, path) {
         } else if (pageType === 'series') {
             pageContent = renderSeriesDetails(itemId);
         } else if (pageType === 'animes') {
-            pageContent = renderAnimeDetails(itemId);
+            pageContent = renderAnimesPage(itemId);
         } else {
             const errorMessage = "Erro: Categoria de conteúdo inválida.";
             showToast(errorMessage, 'error');
@@ -611,14 +501,16 @@ function updateView(container, path) {
     container.innerHTML = `
         ${renderHeader(pageType)}
         <main class="page">
-            <div id="search-results-container" style="display: none;"></div>
-            <div id="catalog-container">
-                ${pageContent}
-            </div>
+            ${pageContent}
         </main>
+        <button id="search-toggle-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <div class="mobile-search-overlay" id="mobile-search-overlay">
+            <input type="text" id="mobile-search-input" class="form-control" placeholder="Pesquisar...">
+        </div>
         <div id="menu-overlay"></div>
         <div id="slide-in-menu">
             <a href="#/cliente/favoritos">Favoritos</a>
+            <a href="#/cliente/historico">Histórico</a>
             <a href="#/cliente/perfil">Perfil</a>
             <a href="#/cliente/configuracoes">Configurações</a>
             <button id="slide-menu-logout-btn">Sair</button>
@@ -634,12 +526,7 @@ function updateView(container, path) {
         const items = pageType === 'filmes' ? db.movies : (pageType === 'series' ? db.series : (db.animes || []));
 
         const filteredItems = items.filter(item => {
-            const searchTerm = normalizeString(currentFilter);
-            const matchesSearch = searchTerm === '' ||
-                normalizeString(item.name).includes(searchTerm) ||
-                normalizeString(item.description).includes(searchTerm) ||
-                normalizeString(MEDIA_CATEGORIES.find(c => c.key === item.category)?.name || '').includes(searchTerm);
-            
+            const matchesSearch = normalizeString(item.name).includes(normalizeString(currentFilter));
             if (currentCategory === 'todos') return matchesSearch;
             if (currentCategory === 'favoritos') return matchesSearch && favorites.includes(item.id);
             // if (currentCategory === 'mais_assistidos' || currentCategory === 'recentes') return matchesSearch;
@@ -722,44 +609,22 @@ export function attachClientListeners(container, viewOptions = {}) {
     const currentViewType = pageType || currentView.type;
 
     const debouncedSearch = debounce(async (value) => {
-        currentFilter = value; // Keep this for other potential filters
-        await handleSearch(value);
-    }, SEARCH_DEBOUNCE_DELAY);
+        currentFilter = value;
+        currentPage = 1; // Reset to first page on search
+        if (currentViewType === 'favoritos') {
+            const { renderFavoritesPage } = await import('views/client/Favorites');
+            renderFavoritesPage(container);
+        } else {
+            updateView(container, `#/cliente/${currentViewType}`);
+        }
+    }, 300);
 
     attachCommonClientListeners(container, {
-        onSearch: ENABLE_SEARCH ? (value) => {
+        onSearch: (value) => {
             debouncedSearch(value);
-        } : () => {},
+        },
         pageType: currentViewType
     });
-
-    if (ENABLE_SEARCH) {
-        const searchInput = document.getElementById('client-search-bar');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                debouncedSearch(e.target.value);
-            });
-             // Clear search on navigation
-             const currentSearchTerm = sessionStorage.getItem('clientSearchTerm') || '';
-             searchInput.value = currentSearchTerm;
-             if (currentSearchTerm) {
-                 handleSearch(currentSearchTerm);
-             }
-             window.addEventListener('hashchange', () => {
-                 searchInput.value = '';
-                 sessionStorage.removeItem('clientSearchTerm');
-                 handleSearch('');
-             }, { once: true }); // Clean up listener after navigation
-             searchInput.addEventListener('search', (e) => { // Handle clear button (X)
-                if(!e.target.value) {
-                    debouncedSearch('');
-                }
-            });
-            searchInput.addEventListener('keyup', (e) => {
-                sessionStorage.setItem('clientSearchTerm', e.target.value);
-            });
-        }
-    }
 
     const headerFavIcon = document.getElementById('header-fav-icon');
     if(headerFavIcon) {
@@ -840,11 +705,7 @@ export function attachClientListeners(container, viewOptions = {}) {
     if (backBtn) {
         backBtn.addEventListener('click', () => {
             // A more robust back navigation
-            const searchInput = document.getElementById('client-search-bar');
-            if (searchInput && searchInput.value) {
-                searchInput.value = '';
-                handleSearch('');
-            } else if(window.history.length > 2) {
+            if(window.history.length > 2) {
                 window.history.back();
             } else {
                 window.location.hash = `#/cliente/${currentView.type || 'filmes'}`;
@@ -869,7 +730,7 @@ export function attachClientListeners(container, viewOptions = {}) {
                 const episodesContainer = document.getElementById('episodes-container');
                 episodesContainer.innerHTML = `
                     <h4>Episódios</h4>
-                    <div class="episode-buttons scrollable-row">
+                    <div class="episode-buttons">
                         ${season.episodes.map(ep => `
                             <button class="btn btn-secondary btn-episode" data-link="${ep.link}">Episódio ${ep.episodeNumber}</button>
                         `).join('')}
@@ -922,33 +783,31 @@ export function attachCommonClientListeners(container, options = {}) {
         document.dispatchEvent(new CustomEvent('logout'));
     });
 
-    if (ENABLE_SEARCH) {
-        // Mobile search
-        const searchToggleBtn = document.getElementById('search-toggle-btn');
-        const mobileSearchOverlay = document.getElementById('mobile-search-overlay');
-        const mobileSearchInput = document.getElementById('mobile-search-input');
+    // Mobile search
+    const searchToggleBtn = document.getElementById('search-toggle-btn');
+    const mobileSearchOverlay = document.getElementById('mobile-search-overlay');
+    const mobileSearchInput = document.getElementById('mobile-search-input');
+    
+    if (searchToggleBtn && mobileSearchOverlay && mobileSearchInput) {
+        searchToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mobileSearchOverlay.classList.toggle('show');
+            if (mobileSearchOverlay.classList.contains('show')) {
+                mobileSearchInput.focus();
+            }
+        });
+
+        mobileSearchOverlay.addEventListener('click', (e) => {
+            if (e.target === mobileSearchOverlay) {
+                mobileSearchOverlay.classList.remove('show');
+            }
+        });
         
-        if (searchToggleBtn && mobileSearchOverlay && mobileSearchInput) {
-            searchToggleBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                mobileSearchOverlay.classList.toggle('show');
-                if (mobileSearchOverlay.classList.contains('show')) {
-                    mobileSearchInput.focus();
-                }
-            });
+        mobileSearchInput.addEventListener('input', e => options.onSearch(e.target.value));
+    }
 
-            mobileSearchOverlay.addEventListener('click', (e) => {
-                if (e.target === mobileSearchOverlay) {
-                    mobileSearchOverlay.classList.remove('show');
-                }
-            });
-            
-            mobileSearchInput.addEventListener('input', e => options.onSearch(e.target.value));
-        }
-
-        const searchInput = document.getElementById('search-input');
-        if (searchInput) {
-            searchInput.addEventListener('input', e => options.onSearch(e.target.value));
-        }
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', e => options.onSearch(e.target.value));
     }
 }
