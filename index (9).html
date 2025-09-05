@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeuFlix</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>M</text></svg>">
+</head>
+<body>
+    <div id="app"></div>
+    <div id="toast-container"></div>
+    <div id="modal-container"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "app": "./app.js",
+            "db": "./db.js",
+            "utils": "./utils.js",
+            "views/Login": "./views/Login.js",
+            "views/Admin": "./views/Admin.js",
+            "views/Client": "./views/Client.js",
+            "views/client/Profile": "./views/client/Profile.js",
+            "views/client/Settings": "./views/client/Settings.js",
+            "views/client/Favorites": "./views/client/Favorites.js",
+            "views/client/Player": "./views/client/Player.js",
+            "views/client/History": "./views/client/History.js",
+            "views/client/UserSettings": "./views/client/UserSettings.js",
+            "views/admin/Layout": "./views/admin/Layout.js",
+            "views/admin/Dashboard": "./views/admin/Dashboard.js",
+            "views/admin/GenerateTest": "./views/admin/GenerateTest.js",
+            "views/admin/MyTests": "./views/admin/MyTests.js",
+            "views/admin/ManageClients": "./views/admin/ManageClients.js",
+            "views/admin/AddMovie": "./views/admin/AddMovie.js",
+            "views/admin/AddSeries": "./views/admin/AddSeries.js",
+            "views/admin/AddAnime": "./views/admin/AddAnime.js",
+            "views/admin/Backup": "./views/admin/Backup.js",
+            "views/admin/Debug": "./views/admin/Debug.js",
+            "views/admin/Config": "./views/admin/Config.js",
+            "i18n": "./i18n.js"
+        }
+    }
+    </script>
+    <script type="module" src="app.js"></script>
+    <script>
+        // Global favorite toggle function to be accessible by inline onclick attributes
+        // This avoids issues with module scopes and dynamically generated content.
+        window.toggleFavorite = (itemId, buttonElement) => {
+            console.log("Estilo do favorito aplicado"); // User requested log
+
+            // Check if we are adding to favorites to play animation
+            const isFavoriting = !buttonElement.classList.contains('favorited');
+            if (isFavoriting) {
+                 // The user requested log
+                console.log("Animação de ursinho ajustada");
+                playFavoriteAnimation(buttonElement);
+            }
+
+            const event = new CustomEvent('toggleFavorite', { detail: { itemId } });
+            document.dispatchEvent(event);
+        };
+        window.deleteItem = (itemId, itemType) => {
+            const event = new CustomEvent('deleteItem', { detail: { itemId, itemType } });
+            document.dispatchEvent(event);
+        };
+
+        // Edit Item Event for Admin Pages
+        window.editItem = (itemId, itemType) => {
+            const event = new CustomEvent('editItem', { detail: { itemId, itemType } });
+            document.dispatchEvent(event);
+        };
+
+        // Global navigation function for admin panel
+        window.adminNavigateTo = (path) => {
+            window.location.hash = path;
+        };
+
+        // Global search function for client panel
+        window.clientSearch = () => {
+            const event = new CustomEvent('clientSearch');
+            document.dispatchEvent(event);
+        };
+        window.handleLike = (itemId) => {
+            const event = new CustomEvent('handleLike', { detail: { itemId } });
+            document.dispatchEvent(event);
+        };
+
+        /**
+         * @tweakable [Animation durations for the teddy bear effect on desktop]
+         */
+        const TEDDY_ANIMATION_DURATIONS_DESKTOP = {
+            fall: 1500, // in ms
+            grab: 300,  // in ms
+            raiseArms: 500, // in ms
+            walk: 3000, // in ms
+        };
+
+        /**
+         * @tweakable [Animation durations for the teddy bear effect on mobile]
+         */
+        const TEDDY_ANIMATION_DURATIONS_MOBILE = {
+            fall: 750,  // in ms
+            grab: 150,  // in ms
+            raiseArms: 250, // in ms
+            walk: 1500, // in ms
+        };
+
+        function playFavoriteAnimation(buttonElement) {
+            const isMobile = window.innerWidth <= 768;
+            const durations = isMobile ? TEDDY_ANIMATION_DURATIONS_MOBILE : TEDDY_ANIMATION_DURATIONS_DESKTOP;
+            
+            const buttonRect = buttonElement.getBoundingClientRect();
+            
+            const teddy = document.createElement('div');
+            teddy.className = 'teddy-bear';
+            teddy.innerHTML = `
+                <svg viewBox="0 0 100 100" class="teddy-svg">
+                    <g class="teddy-arms">
+                        <path class="teddy-arm" d="M25,70 a 15,15 0 0,0 -15,-10" />
+                        <path class="teddy-arm" d="M75,70 a 15,15 0 0,1 15,-10" />
+                    </g>
+                    <circle class="teddy-body" cx="50" cy="65" r="30"/>
+                    <circle class="teddy-head" cx="50" cy="35" r="25"/>
+                    <circle class="teddy-ear" cx="30" cy="15" r="10"/>
+                    <circle class="teddy-ear" cx="70" cy="15" r="10"/>
+                    <circle class="teddy-eye" cx="42" cy="35" r="3"/>
+                    <circle class="teddy-eye" cx="58" cy="35" r="3"/>
+                    <circle class="teddy-nose" cx="50" cy="42" r="4"/>
+                </svg>
+                <span class="heart">❤️</span>
+            `;
+            
+            document.body.appendChild(teddy);
+
+            // Set initial position for JS animation
+            const startTop = -100;
+            const endTop = buttonRect.top + (buttonRect.height / 2) - (teddy.offsetHeight / 2);
+            const startLeft = buttonRect.left + (buttonRect.width / 2) - (teddy.offsetWidth / 2);
+            teddy.style.top = `${startTop}px`;
+            teddy.style.left = `${startLeft}px`;
+            
+            // 1. Fall animation
+            teddy.classList.add('fall');
+            const fallAnimation = teddy.animate([
+                { top: `${startTop}px` },
+                { top: `${endTop}px` }
+            ], {
+                duration: durations.fall,
+                easing: 'ease-out',
+                fill: 'forwards'
+            });
+
+            fallAnimation.onfinish = () => {
+                // 2. "Grab" the heart
+                const buttonIcon = buttonElement.querySelector('.fav-icon');
+                if (buttonIcon) buttonIcon.style.opacity = '0';
+                
+                const heartEl = teddy.querySelector('.heart');
+                heartEl.style.opacity = '1';
+
+                setTimeout(() => {
+                    // 3. Raise arms
+                    teddy.classList.add('raise-arms');
+
+                    setTimeout(() => {
+                        // 4. Walk away
+                        const walkEndLeft = -100;
+                        const walkAnimation = teddy.animate([
+                            { left: `${startLeft}px` },
+                            { left: `${walkEndLeft}px` }
+                        ], {
+                            duration: durations.walk,
+                            easing: 'linear',
+                            fill: 'forwards'
+                        });
+
+                        walkAnimation.onfinish = () => {
+                            // 5. Cleanup
+                            teddy.remove();
+                            if (buttonIcon) buttonIcon.style.opacity = '1';
+                        };
+                    }, durations.raiseArms);
+
+                }, durations.grab);
+            };
+        }
+    </script>
+</body>
+</html>

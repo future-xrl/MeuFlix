@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeuFlix</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>M</text></svg>">
+</head>
+<body>
+    <div id="app"></div>
+    <div id="toast-container"></div>
+    <div id="modal-container"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "app": "./app.js",
+            "db": "./db.js",
+            "utils": "./utils.js",
+            "views/Login": "./views/Login.js",
+            "views/Admin": "./views/Admin.js",
+            "views/Client": "./views/Client.js",
+            "views/client/Profile": "./views/client/Profile.js",
+            "views/client/Settings": "./views/client/Settings.js",
+            "views/client/Favorites": "./views/client/Favorites.js",
+            "views/client/Player": "./views/client/Player.js",
+            "views/client/History": "./views/client/History.js",
+            "views/client/UserSettings": "./views/client/UserSettings.js",
+            "views/admin/Layout": "./views/admin/Layout.js",
+            "views/admin/Dashboard": "./views/admin/Dashboard.js",
+            "views/admin/GenerateTest": "./views/admin/GenerateTest.js",
+            "views/admin/MyTests": "./views/admin/MyTests.js",
+            "views/admin/ManageClients": "./views/admin/ManageClients.js",
+            "views/admin/AddMovie": "./views/admin/AddMovie.js",
+            "views/admin/AddSeries": "./views/admin/AddSeries.js",
+            "views/admin/AddAnime": "./views/admin/AddAnime.js",
+            "views/admin/Backup": "./views/admin/Backup.js",
+            "views/admin/Debug": "./views/admin/Debug.js",
+            "views/admin/Config": "./views/admin/Config.js",
+            "i18n": "./i18n.js"
+        }
+    }
+    </script>
+    <script type="module" src="app.js"></script>
+    <script>
+        // Global favorite toggle function to be accessible by inline onclick attributes
+        // This avoids issues with module scopes and dynamically generated content.
+        window.toggleFavorite = (itemId, buttonElement) => {
+            console.log("Estilo do favorito aplicado"); // User requested log
+
+            // Check if we are adding to favorites to play animation
+            const isFavoriting = !buttonElement.classList.contains('favorited');
+            if (isFavoriting) {
+                 // The user requested log
+                console.log("Animação de ursinho iniciada");
+                playFavoriteAnimation(buttonElement);
+            }
+
+            const event = new CustomEvent('toggleFavorite', { detail: { itemId } });
+            document.dispatchEvent(event);
+        };
+        window.deleteItem = (itemId, itemType) => {
+            const event = new CustomEvent('deleteItem', { detail: { itemId, itemType } });
+            document.dispatchEvent(event);
+        };
+
+        // Edit Item Event for Admin Pages
+        window.editItem = (itemId, itemType) => {
+            const event = new CustomEvent('editItem', { detail: { itemId, itemType } });
+            document.dispatchEvent(event);
+        };
+
+        // Global navigation function for admin panel
+        window.adminNavigateTo = (path) => {
+            window.location.hash = path;
+        };
+
+        // Global search function for client panel
+        window.clientSearch = () => {
+            const event = new CustomEvent('clientSearch');
+            document.dispatchEvent(event);
+        };
+        window.handleLike = (itemId) => {
+            const event = new CustomEvent('handleLike', { detail: { itemId } });
+            document.dispatchEvent(event);
+        };
+
+        /**
+         * @tweakable [Animation durations for the teddy bear effect]
+         */
+        const TEDDY_ANIMATION_DURATIONS = {
+            fall: 500, // in ms
+            grab: 200, // in ms
+            run: 1000, // in ms
+        };
+
+        function playFavoriteAnimation(buttonElement) {
+            const buttonRect = buttonElement.getBoundingClientRect();
+
+            const teddy = document.createElement('div');
+            teddy.className = 'teddy-bear';
+            
+            const heart = document.createElement('span');
+            heart.className = 'heart';
+            heart.textContent = '❤️';
+            teddy.appendChild(heart);
+
+            document.body.appendChild(teddy);
+
+            // 1. Fall animation
+            const fallStartTop = -100; // Start off-screen
+            const fallEndTop = buttonRect.top;
+            const fallStartLeft = buttonRect.left + (buttonRect.width / 2) - (teddy.offsetWidth / 2);
+
+            const fallAnimation = teddy.animate([
+                { top: `${fallStartTop}px`, left: `${fallStartLeft}px` },
+                { top: `${fallEndTop}px`, left: `${fallStartLeft}px` }
+            ], {
+                duration: TEDDY_ANIMATION_DURATIONS.fall,
+                easing: 'ease-out',
+                fill: 'forwards'
+            });
+
+            fallAnimation.onfinish = () => {
+                // 2. "Grab" the heart
+                const buttonIcon = buttonElement.querySelector('.fav-icon');
+                if (buttonIcon) buttonIcon.style.opacity = '0';
+                heart.style.opacity = '1';
+
+                setTimeout(() => {
+                    // 3. Run away animation
+                    const runEndLeft = -100; // Run off-screen to the left
+                    const runAnimation = teddy.animate([
+                        { transform: 'translateX(0)' },
+                        { transform: `translateX(${runEndLeft - fallStartLeft}px)` }
+                    ], {
+                        duration: TEDDY_ANIMATION_DURATIONS.run,
+                        easing: 'linear',
+                        fill: 'forwards'
+                    });
+
+                    runAnimation.onfinish = () => {
+                        // 4. Cleanup
+                        teddy.remove();
+                        if (buttonIcon) buttonIcon.style.opacity = '1'; // Restore icon visibility
+                    };
+                }, TEDDY_ANIMATION_DURATIONS.grab);
+            };
+        }
+    </script>
+</body>
+</html>
