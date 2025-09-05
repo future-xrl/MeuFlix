@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meuflix</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 fill=%22%23E50914%22>M</text></svg>">
+</head>
+<body>
+    <div id="app"></div>
+    <div id="toast-container"></div>
+    <div id="modal-container"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "app": "./app.js",
+            "db": "./db.js",
+            "utils": "./utils.js",
+            "views/Login": "./views/Login.js",
+            "views/Admin": "./views/Admin.js",
+            "views/Client": "./views/Client.js",
+            "views/client/Profile": "./views/client/Profile.js",
+            "views/client/Settings": "./views/client/Settings.js",
+            "views/client/Favorites": "./views/client/Favorites.js",
+            "views/client/Player": "./views/client/Player.js",
+            "views/client/History": "./views/client/History.js",
+            "views/admin/Layout": "./views/admin/Layout.js",
+            "views/admin/Dashboard": "./views/admin/Dashboard.js",
+            "views/admin/GenerateTest": "./views/admin/GenerateTest.js",
+            "views/admin/MyTests": "./views/admin/MyTests.js",
+            "views/admin/ManageClients": "./views/admin/ManageClients.js",
+            "views/admin/AddMovie": "./views/admin/AddMovie.js",
+            "views/admin/AddSeries": "./views/admin/AddSeries.js",
+            "views/admin/AddAnime": "./views/admin/AddAnime.js",
+            "views/admin/Backup": "./views/admin/Backup.js",
+            "views/admin/Debug": "./views/admin/Debug.js"
+        }
+    }
+    </script>
+    <script type="module" src="app.js"></script>
+    <script>
+        // Global favorite toggle function to be accessible by inline onclick attributes
+        // This avoids issues with module scopes and dynamically generated content.
+        window.toggleFavorite = (itemId) => {
+            const event = new CustomEvent('toggleFavorite', { detail: { itemId } });
+            document.dispatchEvent(event);
+        };
+        window.deleteItem = (itemId, itemType) => {
+            const event = new CustomEvent('deleteItem', { detail: { itemId, itemType } });
+            document.dispatchEvent(event);
+        };
+
+        // Edit Item Event for Admin Pages
+        window.editItem = (itemId, itemType) => {
+            const event = new CustomEvent('editItem', { detail: { itemId, itemType } });
+            document.dispatchEvent(event);
+        };
+
+        // Global navigation function for admin panel
+        window.adminNavigateTo = (path) => {
+            window.location.hash = path;
+        };
+    </script>
+</body>
+</html>
