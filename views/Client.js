@@ -148,7 +148,7 @@ export function renderMediaGrid(items, onPageChange, { currentPage, itemsPerPage
     const paginatedItems = items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
     
     if (items.length === 0) {
-        return `<p>Nenhum item encontrado.</p>`;
+        return `<div class="catalog-container-empty"><p>Nenhum item encontrado.</p></div>`;
     }
 
     const gridHTML = `
@@ -178,7 +178,10 @@ function renderCatalogPage(title, items, type, onPageChange) {
     const currentUser = userResult ? userResult.user : {};
     const favorites = currentUser?.favorites || [];
 
-    const filteredItems = items.filter(item => {
+    // Ensure items is an array before filtering
+    const safeItems = Array.isArray(items) ? items : [];
+
+    const filteredItems = safeItems.filter(item => {
         const matchesSearch = normalizeString(item.name).includes(normalizeString(currentFilter));
         
         if (currentCategory === 'todos') return matchesSearch;
@@ -226,7 +229,10 @@ function renderCatalogPage(title, items, type, onPageChange) {
                     </div>
                 </div>
             </div>
-            ${filteredItems.length === 0 ? '' : renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
+            ${filteredItems.length === 0 
+                ? '<div class="catalog-container-empty"><p>Nenhum item encontrado para esta categoria.</p></div>' 
+                : renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })
+            }
         </div>
     `;
     return content;
@@ -289,7 +295,9 @@ function renderAnimesPage(container) {
             break;
     }
 
-    const filteredItems = animes.filter(item => normalizeString(item.name).includes(normalizeString(currentFilter)));
+    // Ensure animes is an array before filtering.
+    const safeAnimes = Array.isArray(animes) ? animes : [];
+    const filteredItems = safeAnimes.filter(item => normalizeString(item.name).includes(normalizeString(currentFilter)));
     
     const sortOptions = {
         'alfabetica': { name: 'Ordem Alfabética', icon: 'fa-solid fa-sort-alpha-down' },
@@ -326,7 +334,10 @@ function renderAnimesPage(container) {
                     </div>
                 </div>
             </div>
-            ${filteredItems.length === 0 ? '' : renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
+            ${filteredItems.length === 0 
+                ? '<div class="catalog-container-empty"><p>Nenhum anime encontrado.</p></div>' 
+                : renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })
+            }
         </div>
     `;
     return content;
@@ -339,7 +350,7 @@ function renderMovieDetails(movieId) {
         const errorMessage = "Erro ao carregar detalhes, item não encontrado.";
         showToast(errorMessage, 'error');
         window.location.hash = '#/cliente/filmes'; // Go back to safety
-        return `<p>${errorMessage}</p>`;
+        return `<div class="catalog-container-empty"><p>${errorMessage}</p></div>`;
     }
     
     const userResult = getCurrentUser();
@@ -385,7 +396,7 @@ function renderSeriesDetails(seriesId) {
         const errorMessage = "Erro ao carregar detalhes, item não encontrado.";
         showToast(errorMessage, 'error');
         window.location.hash = '#/cliente/series'; // Go back to safety
-        return `<p>${errorMessage}</p>`;
+        return `<div class="catalog-container-empty"><p>${errorMessage}</p></div>`;
     }
 
     const userResult = getCurrentUser();
@@ -432,7 +443,7 @@ function renderAnimeDetails(animeId) {
         const errorMessage = "Erro ao carregar detalhes, item não encontrado.";
         showToast(errorMessage, 'error');
         window.location.hash = '#/cliente/animes'; // Go back to safety
-        return `<p>${errorMessage}</p>`;
+        return `<div class="catalog-container-empty"><p>${errorMessage}</p></div>`;
     }
 
     const userResult = getCurrentUser();
@@ -491,7 +502,7 @@ function updateView(container, path) {
         } else {
             const errorMessage = "Erro: Categoria de conteúdo inválida.";
             showToast(errorMessage, 'error');
-            pageContent = `<p>${errorMessage}</p>`;
+            pageContent = `<div class="catalog-container-empty"><p>${errorMessage}</p></div>`;
             window.location.hash = '#/cliente/filmes';
         }
     } else {
@@ -529,9 +540,16 @@ function updateView(container, path) {
         const currentUser = userResult ? userResult.user : {};
         const favorites = currentUser?.favorites || [];
         const db = getDB();
-        const items = pageType === 'filmes' ? db.movies : (pageType === 'series' ? db.series : (db.animes || []));
+        
+        let items = [];
+        if (pageType === 'filmes') items = db.movies;
+        else if (pageType === 'series') items = db.series;
+        else if (pageType === 'animes') items = (db.animes || []);
 
-        const filteredItems = items.filter(item => {
+        // Ensure items is an array before filtering
+        const safeItems = Array.isArray(items) ? items : [];
+
+        const filteredItems = safeItems.filter(item => {
             const matchesSearch = normalizeString(item.name).includes(normalizeString(currentFilter));
             if (currentCategory === 'todos') return matchesSearch;
             if (currentCategory === 'favoritos') return matchesSearch && favorites.includes(item.id);
@@ -548,37 +566,6 @@ function updateView(container, path) {
 
     // This was missing, preventing interactions like clicking on media cards and favoriting.
     attachClientListeners(container);
-}
-
-async function handleToggleFavorite(itemId, container) {
-    const userResult = getCurrentUser();
-    if (!userResult) return;
-
-    const { user, type } = userResult;
-    const db = getDB();
-    const userIndex = db.users[type].findIndex(u => u.username === user.username);
-    if (userIndex === -1) return;
-
-    const userFromDB = db.users[type][userIndex];
-    userFromDB.favorites = userFromDB.favorites || [];
-    const itemIndex = userFromDB.favorites.indexOf(itemId);
-
-    if (itemIndex > -1) {
-        userFromDB.favorites.splice(itemIndex, 1); // Unfavorite
-    } else {
-        userFromDB.favorites.push(itemId); // Favorite
-    }
-    
-    saveDB(db);
-
-    // Re-render the view to update all favorite icons and potentially the list if on "Favorites"
-    const currentHash = window.location.hash.slice(1);
-    if (currentHash.startsWith('/cliente/favoritos')) {
-        const { renderFavoritesPage } = await import('views/client/Favorites');
-        renderFavoritesPage(container);
-    } else {
-        updateView(container, currentHash);
-    }
 }
 
 function handleEpisodeClick(e) {
@@ -599,6 +586,27 @@ function handleEpisodeClick(e) {
     }
 }
 
+function renderEmptyPage(container, path) {
+    console.log("Página vazia renderizada devido a um erro.");
+    const pageType = (path.split('/')[2] || 'filmes').split('?')[0];
+    container.innerHTML = `
+        ${renderHeader(pageType)}
+        <main class="page">
+            <div class="container catalog-container-empty">
+                <p>Ocorreu um erro ao carregar esta categoria. Tente novamente mais tarde.</p>
+            </div>
+        </main>
+        <div id="menu-overlay"></div>
+        <div id="slide-in-menu">
+            <a href="#/cliente/favoritos">${t('favorites')}</a>
+            <a href="#/cliente/perfil">${t('profile')}</a>
+            <a href="#/cliente/configuracoes-usuario">${t('user_settings')}</a>
+            <button id="slide-menu-logout-btn">${t('logout')}</button>
+        </div>
+    `;
+    attachCommonClientListeners(container);
+}
+
 export function renderClientPanel(container, path) {
     const session = getSession();
     if (!session) {
@@ -607,7 +615,13 @@ export function renderClientPanel(container, path) {
         return;
     }
     console.log('Renderizando página:', window.location.hash, 'User:', session.username);
-    updateView(container, path);
+    try {
+        console.log(`Carregando categoria: ${path.split('?')[0]}`);
+        updateView(container, path);
+    } catch(e) {
+        console.log('Erro na categoria: ', e);
+        renderEmptyPage(container, path);
+    }
 }
 
 export function attachClientListeners(container, viewOptions = {}) {

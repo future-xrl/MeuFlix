@@ -56,6 +56,8 @@ async function loadConfigFromGitHub() {
         });
 
         if (!response.ok) {
+            // Handle cases like 404 Not Found gracefully
+            console.log(`Erro ao carregar cinemaDB.json: ${response.statusText}`);
             throw new Error(`Erro ao buscar configurações: ${response.statusText}`);
         }
 
@@ -64,19 +66,31 @@ async function loadConfigFromGitHub() {
         // The content is base64 encoded. Decode it safely for UTF-8 characters.
         currentDBContent = JSON.parse(decodeURIComponent(escape(atob(fileData.content))));
         
-        console.log("Carregado cinemaDB.json", currentDBContent);
+        console.log("Carregado cinemaDB.json: ", JSON.stringify(currentDBContent));
 
-        // Populate form
-        const securitySettings = currentDBContent.users?.admin?.security || {};
+        // Populate form fields, ensuring the path to security settings exists.
+        const securitySettings = currentDBContent?.users?.admin?.security || {};
         const usernameInput = document.getElementById('security-username');
         const birthdayInput = document.getElementById('security-birthday');
-        if (usernameInput) usernameInput.value = securitySettings.username || '';
-        if (birthdayInput) birthdayInput.value = securitySettings.birthday || '';
+        
+        if (usernameInput) {
+            usernameInput.value = securitySettings.username || '';
+        }
+        if (birthdayInput) {
+            birthdayInput.value = securitySettings.birthday || '';
+        }
 
     } catch (error) {
         console.error('Falha ao carregar configuração do GitHub:', error);
-        showToast(error.message, 'error');
+        showToast('Falha ao carregar as configurações do GitHub. Verifique o token e a conexão.', 'error');
+        // Disable save button as we don't have the correct SHA or content
         document.getElementById('save-security-btn').disabled = true;
+        
+        // As a fallback, clear the fields to avoid showing stale data from the template
+        const usernameInput = document.getElementById('security-username');
+        const birthdayInput = document.getElementById('security-birthday');
+        if (usernameInput) usernameInput.value = '';
+        if (birthdayInput) birthdayInput.value = '';
     }
 }
 

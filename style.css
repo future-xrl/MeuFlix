@@ -621,6 +621,14 @@ textarea.form-control {
     text-align: center;
 }
 
+/** @tweakable [Minimum height for the catalog container when it's empty] */
+.catalog-container-empty {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Anime Sort Button */
 .anime-sort-button {
     /** @tweakable [Styling for the anime sort button] */
