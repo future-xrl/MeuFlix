@@ -95,25 +95,6 @@ function attachMovieFormListeners() {
         }
     });
 
-    document.getElementById('movie-list').addEventListener('click', e => {
-        const db = getDB();
-        if (e.target.classList.contains('edit-movie')) {
-            const movieId = e.target.dataset.id;
-            const movie = db.movies.find(m => m.id === movieId);
-            renderAddMoviePage(document.getElementById('app'), movie);
-        }
-        if (e.target.classList.contains('delete-movie')) {
-            if (confirm('Deseja excluir este filme?')) {
-                const movieId = e.target.dataset.id;
-                let db = getDB();
-                db.movies = db.movies.filter(m => m.id !== movieId);
-                saveDB(db);
-                showToast('Filme excluído!');
-                renderAddMoviePage(document.getElementById('app'));
-            }
-        }
-    });
-
     const cancelBtn = document.getElementById('cancel-edit');
     if(cancelBtn) {
         cancelBtn.addEventListener('click', () => renderAddMoviePage(document.getElementById('app')));
@@ -166,8 +147,8 @@ export function renderAddMoviePage(container, movieToEdit = null) {
                     <li>
                         <span>${movie.name}</span>
                         <div class="actions">
-                            <button class="btn btn-secondary btn-sm edit-movie" data-id="${movie.id}">Editar</button>
-                            <button class="btn btn-danger btn-sm delete-movie" data-id="${movie.id}">Excluir</button>
+                            <button class="btn btn-secondary" onclick="editItem('${movie.id}', 'movies')">Editar</button>
+                            <button class="btn btn-danger" onclick="deleteItem('${movie.id}', 'movies')">Excluir</button>
                         </div>
                     </li>
                 `).join('')}

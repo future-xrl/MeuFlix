@@ -77,6 +77,13 @@ a:hover {
     animation: fadeIn 0.5s ease-in-out;
 }
 
+.login-form .logo {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
 .login-form h1 {
     text-align: center;
     margin-bottom: 2rem;
@@ -241,6 +248,7 @@ textarea.form-control {
     flex: 1;
     display: flex;
     flex-direction: column;
+    position: relative; /* For sticky menu */
 }
 #admin-page-content .card {
     display: flex;
@@ -257,6 +265,45 @@ textarea.form-control {
     border-bottom: 1px solid var(--light-dark-color);
 }
 
+/** @tweakable [Styling for the admin top navigation menu container] */
+#admin-top-menu {
+    display: flex;
+    justify-content: space-around;
+    background: var(--light-dark-color);
+    padding: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 990; /* Below fixed header buttons */
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    margin-bottom: 1.5rem;
+    border-radius: var(--border-radius);
+}
+
+/** @tweakable [Styling for the buttons within the admin top navigation menu] */
+#admin-top-menu .btn {
+    padding: 10px 20px;
+    background: var(--medium-dark-color);
+    color: var(--text-color);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+    width: auto;
+    flex: 1;
+    margin: 0 5px;
+}
+
+#admin-top-menu .btn:hover {
+    background: #444;
+}
+
+#admin-top-menu .btn.active {
+    background: var(--primary-color);
+    color: white;
+}
+
 #admin-header-content {
     display: flex;
     align-items: center;
@@ -270,6 +317,8 @@ textarea.form-control {
     border: none;
     color: var(--text-color);
     cursor: pointer;
+    width: 30px;
+    height: 30px;
 }
 
 #logout-btn-fixed {
@@ -306,6 +355,25 @@ textarea.form-control {
     font-size: 1.8rem;
 }
 
+/* --- Logo Styling --- */
+/** @tweakable [Color of the main letter in the logo] */
+.logo-m-color {
+    color: #FF0000;
+}
+
+.logo {
+    font-weight: bold;
+    color: var(--text-color);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    font-size: 2rem; /* 50px height approx */
+}
+
+.logo span {
+    color: var(--primary-color);
+}
+
 /* Header (Client) */
 .client-header {
     background-color: var(--medium-dark-color);
@@ -315,6 +383,17 @@ textarea.form-control {
     align-items: center;
     box-shadow: var(--box-shadow);
 }
+.client-header .logo-link {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-color);
+    text-decoration: none;
+}
+.client-header .logo-link span {
+    /** @tweakable [Color of the main letter in the client header logo] */
+    color: #FF0000;
+}
+
 .client-header .logo {
     font-size: 1.5rem;
     font-weight: bold;
@@ -380,7 +459,9 @@ textarea.form-control {
     box-shadow: var(--box-shadow);
     z-index: 1000;
     font-size: 0.9rem;
-    white-space: nowrap;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: #ff8e8e;
 }
 
 .header-fav-dropdown.show {
@@ -446,11 +527,18 @@ textarea.form-control {
 /* Catalog Top Bar */
 .catalog-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 1.5rem;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
+}
+
+.catalog-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }
 
 .catalog-header h1 {
@@ -543,6 +631,43 @@ textarea.form-control {
     border-radius: 5px;
     cursor: pointer;
     font-weight: bold;
+}
+
+/* --- New Search Container --- */
+/** @tweakable [Styling for the new search bar container wrapper] */
+.search-container-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+/** @tweakable [Styling for the new search bar container] */
+.search-container {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 500px;
+}
+
+/** @tweakable [Styling for the search input field] */
+.search-container input {
+    /* @tweakable [Flex-grow ratio for the search input] */
+    flex-grow: 3; /* ~75% */
+    border: 1px solid var(--light-dark-color);
+}
+
+/** @tweakable [Styling for the search button] */
+.search-container button {
+    background-color: #28a745;
+    color: white;
+    width: auto;
+    /* @tweakable [Flex-grow ratio for the search button] */
+    flex-grow: 1; /* ~25% */
+    flex-shrink: 0;
+    padding: 0 20px;
+}
+.search-container button:hover {
+    background-color: #218838;
 }
 
 /* --- Mobile Search --- */
@@ -669,15 +794,196 @@ textarea.form-control {
     padding: 0;
 }
 
+/* --- New Favorite Button Styles --- */
+/** @tweakable [Styling for the enhanced favorite button] */
 .favorite-section .favorite-btn.favorited {
     color: var(--primary-color);
 }
 
-/** @tweakable [Styling for the favorited button on the player page] */
-.favorite-btn-player.favorited {
-    background-color: var(--primary-color);
+.favorite-btn-player, .details-view .favorite-btn {
+    /* @tweakable [Minimum height for the favorite button] */
+    min-height: 35px;
+    width: auto;
+    /* @tweakable [Padding for the favorite button] */
+    padding: 8px 16px;
+    /* @tweakable [Border radius for the favorite button] */
+    border-radius: 10px;
+    border: none;
     color: white;
-    border-color: var(--primary-color);
+    /* @tweakable [Font size for the favorite button] */
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    /* @tweakable [Transition timing for the favorite button] */
+    transition: all 0.2s ease;
+    
+    /* Inactive State (Default) */
+    /** @tweakable [Gradient colors for the inactive favorite button] */
+    background: linear-gradient(to right, #FF6B6B, #FF8787);
+    /** @tweakable [Box shadow for the inactive favorite button] */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/** @tweakable [Styling for the active (favorited) favorite button] */
+.favorite-btn-player.favorited, .details-view .favorite-btn.favorited {
+    /** @tweakable [Gradient colors for the active favorite button] */
+    background: linear-gradient(to right, #FF4040, #FF1A1A);
+    /** @tweakable [Box shadow for the active favorite button] */
+    box-shadow: 0 4px 6px rgba(255, 0, 0, 0.2);
+}
+
+.favorite-btn-player .fav-icon, .details-view .favorite-btn .fav-icon {
+    font-style: normal; /* In case an <i> tag is used */
+}
+
+/* --- End New Favorite Button Styles --- */
+
+/* --- Teddy Bear Animation --- */
+/** @tweakable [Styling for the animated teddy bear] */
+.teddy-bear {
+    position: fixed;
+    /* @tweakable [Size of the teddy bear on desktop] */
+    width: 50px;
+    height: 50px;
+    z-index: 10001;
+    /** @tweakable [Box shadow for the teddy bear] */
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    will-change: top, left, transform; /* Performance hint */
+}
+
+.teddy-bear .teddy-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.teddy-bear .teddy-svg * {
+    stroke-width: 0;
+    fill: white;
+}
+.teddy-bear .teddy-svg .teddy-eye, .teddy-bear .teddy-svg .teddy-nose {
+    fill: black;
+}
+.teddy-bear .teddy-svg .teddy-arm {
+    fill: none;
+    stroke: white;
+    stroke-width: 12;
+    stroke-linecap: round;
+    transform-origin: center center;
+    transition: transform 0.5s ease-in-out;
+}
+
+.teddy-bear.raise-arms .teddy-arm {
+    transform: rotate(-45deg) translateY(-10px);
+}
+
+/** @tweakable [Styling for the heart carried by the teddy bear] */
+.teddy-bear .heart {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* @tweakable [Font size of the heart icon on desktop] */
+    font-size: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in;
+}
+
+/* --- End Teddy Bear Animation --- */
+
+/* --- Splash Screen --- */
+#splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10002;
+    transition: opacity 0.5s ease-in;
+    opacity: 1;
+}
+
+#splash-screen::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /** @tweakable [Styling for the subtle noise effect on the splash screen] */
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 10%, transparent 40%);
+    animation: noise 10s linear infinite alternate;
+    opacity: 0.1;
+}
+
+@keyframes noise {
+    0% { transform: translate(0, 0); }
+    10% { transform: translate(-5%, -5%); }
+    20% { transform: translate(-10%, 5%); }
+    30% { transform: translate(5%, -10%); }
+    40% { transform: translate(-5%, 15%); }
+    50% { transform: translate(-10%, 5%); }
+    60% { transform: translate(15%, 0); }
+    70% { transform: translate(0, 10%); }
+    80% { transform: translate(-15%, 0); }
+    90% { transform: translate(10%, 5%); }
+    100% { transform: translate(5%, 0); }
+}
+
+/** @tweakable [Styling for the animated 'M' logo on the splash screen] */
+.logo-m {
+    /** @tweakable [Font family for the splash screen logo, fallback to Arial Black] */
+    font-family: 'Arial Black', sans-serif;
+    color: #FF0000;
+    /* @tweakable [Initial font size of the splash screen logo on desktop] */
+    font-size: 250px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    /** @tweakable [Text shadow for the metallic effect on the splash logo] */
+    text-shadow: 0 0 10px #FF3333, 0 0 20px #FF0000, 0 0 30px #B30000;
+    /** @tweakable [Filter effects for the metallic shine on the splash logo] */
+    filter: brightness(1.2) saturate(1.5);
+    will-change: transform, opacity, font-size, filter;
+}
+
+/* Animations for the Splash Logo */
+.logo-m.fade-in { animation: fade-in 1.2s ease-out forwards; }
+.logo-m.grow { animation: grow 2.5s ease-in-out forwards; }
+.logo-m.fade-out { animation: fade-out 1.2s ease-in forwards; }
+
+@keyframes fade-in {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+@keyframes grow {
+    from {
+        font-size: 250px;
+        transform: translate(-50%, -50%) scale(1.1);
+        filter: brightness(1.2) saturate(1.5);
+    }
+    to {
+        /* @tweakable [Final font size of the splash screen logo during growth animation on desktop] */
+        font-size: 600px;
+        transform: translate(-50%, -50%) scale(1.5);
+        filter: brightness(1.5) saturate(2) blur(3px);
+    }
+}
+
+@keyframes fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; transform: translate(-50%, -50%) scale(1.5) skewX(5deg); }
 }
 
 /* Search Bar */
@@ -734,48 +1040,107 @@ textarea.form-control {
     padding-bottom: 2rem;
 }
 
-.favorite-button-wrapper-player {
-    /** @tweakable [Styling for the favorite button on the player page] */
-    margin-bottom: 1.5rem;
-    margin-top: 0.5rem;
+.player-info-container p {
+    margin-bottom: 1rem;
 }
 
-.favorite-btn-player {
-    display: inline-flex;
-    padding: 5px 10px;
+/* --- Player: Seasons & Episodes --- */
+/** @tweakable [Styling for the season buttons container] */
+.season-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+/** @tweakable [Styling for the individual season buttons] */
+.btn-season {
+    background-color: #fff;
+    color: #000;
     border: 1px solid #ccc;
-    border-radius: 5px;
-    background: none;
-    color: var(--text-color);
+    padding: 8px 12px;
+    border-radius: 20px;
     cursor: pointer;
-    font-size: 1rem;
-    align-items: center;
-}
-.favorite-btn-player .fa-heart {
-    color: grey;
-    transition: color 0.2s ease-in-out;
-}
-.favorite-btn-player.favorited .fa-heart {
-    color: red;
+    transition: background-color 0.2s, color 0.2s;
+    width: auto;
 }
 
-/* Player */
-.player-container {
-    position: relative;
-    padding-bottom: 56.25%; /* 16:9 aspect ratio */
-    height: 0;
-    overflow: hidden;
-    max-width: 100%;
-    background: #000;
-    margin-top: 2rem;
+.btn-season.active {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
 }
-.player-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: 0;
+
+#episodes-container h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/** @tweakable [Styling for the episode buttons container] */
+.episode-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/** @tweakable [Styling for individual episode buttons] */
+.btn-episode {
+    background-color: var(--light-dark-color);
+    color: var(--text-color);
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: auto;
+    border: none;
+}
+.btn-episode.active {
+    background-color: var(--primary-color);
+}
+
+.next-episode-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+#next-episode-btn {
+    background-color: #28a745;
+    color: white;
+    width: auto;
+    padding: 10px 20px;
+}
+#next-episode-btn:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+.like-section-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 2rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--light-dark-color);
+}
+.like-section-divider {
+    flex-grow: 1;
+    height: 1px;
+    background-color: var(--light-dark-color);
+}
+.like-section-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.like-heart {
+    font-size: 1.5rem;
+}
+.like-text {
+    color: #4facfe;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 /* --- Table --- */
@@ -904,6 +1269,45 @@ textarea.form-control {
     font-size: 1rem;
     color: var(--text-muted-color);
     margin-top: 0.5rem;
+}
+
+/* --- Admin Item Lists (AddMovie/Series/Anime) --- */
+.item-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 1.5rem;
+}
+
+.item-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--light-dark-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 0.75rem;
+    background-color: var(--dark-color);
+}
+
+.item-list li span {
+    flex-grow: 1;
+    margin-right: 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.item-list li .actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0; /* Prevent buttons from shrinking */
+}
+
+.item-list li .actions .btn {
+    /** @tweakable [Width of action buttons in admin item lists] */
+    width: 90px;
+    padding: 0.5rem 0.6rem; /* A bit more padding */
+    font-size: 0.9rem;
 }
 
 /* --- Action Dropdown --- */
@@ -1096,16 +1500,29 @@ textarea.form-control {
         -webkit-text-size-adjust: 100%; /* Prevent font scaling on iOS */
     }
     
+    .logo {
+        font-size: 1.6rem; /* 40px height approx */
+    }
+
+    /** @tweakable [Grid settings for the catalog on mobile devices] */
+    .catalog-grid {
+        /* @tweakable [Minimum width for media cards on mobile] */
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        /* @tweakable [Gap between media cards on mobile] */
+        gap: 0.75rem;
+    }
+    
+    /** @tweakable [Media card title styles on mobile devices] */
+    .media-card-title {
+        /* @tweakable [Font size for media card titles on mobile] */
+        font-size: 0.75rem; /* ~10.5px */
+        padding: 0.5rem 0.1rem;
+    }
+
     .player-wrapper iframe, .player-wrapper video, .player-placeholder {
         /** @tweakable [Player height on mobile] */
         height: 40vh;
         object-fit: cover;
-    }
-
-    .favorite-btn-player {
-        /** @tweakable [Font size for favorite button on mobile] */
-        font-size: 16px; 
-        padding: 5px;
     }
 
     .main-layout {
@@ -1173,91 +1590,27 @@ textarea.form-control {
         padding: 1rem;
     }
 
-    .catalog-grid {
-        /** @tweakable [Grid layout for catalog on mobile] */
-        display: grid;
-        grid-template-columns: repeat(3, 70px);
-        grid-template-rows: repeat(auto-fit, 100px);
-        gap: 10px;
-        justify-content: center;
-        padding-bottom: 2rem;
-    }
-    .media-card {
-        width: 70px;
-        height: 100px;
-    }
-    .media-card .cover-container {
-        height: 100%;
-    }
-     .media-card .cover-container img, .media-card .cover-container .placeholder-cover {
-        height: 100%;
-        border-radius: 5px;
-    }
-    .media-card-title {
-       display: none; /* Hide title on this compact mobile view */
+    /** @tweakable [Responsive styling for the new search container on mobile] */
+    .search-container {
+        flex-direction: column;
+        max-width: 100%;
+        align-items: flex-end;
     }
 
-    /* Responsive Table to Card Layout */
-    .styled-table {
-        border: 0;
+    .search-container input,
+    .search-container button {
+        width: 100%;
     }
-    .styled-table thead {
-        display: none;
+
+    /** @tweakable [Responsive styling for the admin top navigation menu] */
+    #admin-top-menu {
+        flex-direction: column;
+        padding: 5px;
+        position: static; /* Unstick on mobile to avoid layout issues */
     }
-    .styled-table tr {
-        display: block;
-        margin-bottom: 1rem;
-        border-radius: var(--border-radius);
-        background: var(--light-dark-color);
-        box-shadow: var(--box-shadow);
-        border-bottom: 2px solid var(--primary-color);
-    }
-    .styled-table td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 15px;
-        border-bottom: 1px solid #444;
-        text-align: right;
-        position: relative;
-    }
-    .styled-table td:last-child {
-        border-bottom: 0;
-    }
-    .styled-table td::before {
-        content: attr(data-label);
-        font-weight: bold;
-        text-align: left;
-        margin-right: 1rem;
-        color: var(--text-muted-color);
-    }
-    .styled-table .actions {
-        justify-content: flex-end; /* Align actions to the right */
-        gap: 0.8rem;
-    }
-    .action-dropdown {
-        position: static; /* Let it flow with content */
-    }
-    .action-dropdown-content {
-        right: 15px; /* Align to the right edge of the card */
-    }
-    .styled-table td.client-description {
-        word-break: break-word;
-    }
-    .table-wrapper {
-        overflow-x: hidden;
-    }
-     .form-control {
-        padding: 0.7rem;
-        font-size: 1rem;
-    }
-     .pagination {
-        flex-wrap: wrap;
-    }
-     .pagination button {
-        width: 35px;
-        height: 35px;
-        font-size: 0.9rem;
+    #admin-top-menu .btn {
+        margin: 5px 0;
+        width: 100%;
     }
 
     .client-header {
@@ -1269,7 +1622,7 @@ textarea.form-control {
     .client-header nav.desktop-nav, .client-header .header-actions {
         display: none; /* Hide desktop nav and actions */
     }
-     .client-header .logo { font-size: 1.2rem; }
+     .client-header .logo-link { font-size: 1.2rem; }
 
     #client-menu-toggle {
         /* This is the top-right hamburger menu, we no longer need it. */
@@ -1280,7 +1633,7 @@ textarea.form-control {
         display: none;
     }
     #search-toggle-btn {
-        display: block;
+        display: none; /* No longer needed, search bar is always visible */
     }
 
     .mobile-nav {
@@ -1353,5 +1706,44 @@ textarea.form-control {
     .history-card {
         width: 100%;
         height: auto;
+    }
+
+    /* --- Profile Page --- */
+    .profile-links {
+        margin: 2rem 0;
+        display: none; /* Hidden by default, shown on mobile */
+    }
+
+    .profile-links .btn {
+        width: 100%;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+    /* --- Settings Page --- */
+    .settings-section {
+        margin-top: 2rem;
+    }
+
+    .desktop-only {
+        display: block;
+    }
+    .mobile-only {
+        display: none;
+    }
+
+    .teddy-bear {
+        /* @tweakable [Size of the teddy bear on mobile] */
+        width: 25px;
+        height: 25px;
+    }
+
+    .teddy-bear .heart {
+        /* @tweakable [Font size of the heart icon on mobile] */
+        font-size: 10px;
+    }
+    
+    .teddy-bear .teddy-svg .teddy-arm {
+        stroke-width: 18; /* Thicker for smaller size */
     }
 }

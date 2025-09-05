@@ -12,6 +12,7 @@ export function renderDashboardPage(container) {
         return expiresAt > now && expiresAt <= sevenDaysFromNow;
     }).length;
     const expiredClients = db.users.clients.filter(c => new Date(c.expiresAt) < now).length;
+    const testCount = (db.users.tests || []).length;
 
     const content = `
         <div class="dashboard-grid">
@@ -28,10 +29,11 @@ export function renderDashboardPage(container) {
                 <div class="title">Clientes que Já Venceram</div>
             </div>
              <div class="dashboard-card">
-                <div class="count">0</div>
-                <div class="title">Clientes Online (Simulado)</div>
+                <div class="count">${testCount}</div>
+                <div class="title">Testes Ativos</div>
             </div>
         </div>
     `;
     renderLayout(container, content, 'Painel');
 }
+

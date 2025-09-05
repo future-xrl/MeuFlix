@@ -1,17 +1,30 @@
 import { getDB, saveDB } from 'db';
 import { normalizeString, getEmbedUrl, showToast, MEDIA_CATEGORIES, renderPaginationControls, debounce } from 'utils';
+import { t } from 'i18n';
 
-const session = JSON.parse(localStorage.getItem('session'));
 let currentFilter = '';
 let currentCategory = 'todos';
 /* @tweakable [Default sort order for animes] */
 let currentAnimeSort = 'alfabetica';
 let currentPage = 1;
 /** @tweakable [Number of items per page in the client catalog] */
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 24;
 let currentView = { type: 'filmes', id: null }; // or { type: 'series', id: null } or { type: 'animes', id: null }
 
+function getSession() {
+    try {
+        const session = JSON.parse(localStorage.getItem('session'));
+        if (session && session.username && session.role) {
+            return session;
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
+
 function getCurrentUser() {
+    const session = getSession();
     if (!session?.username) return null;
     const db = getDB();
     let user = db.users.clients.find(c => c.username === session.username);
@@ -63,28 +76,30 @@ async function handleHeaderFavoriteClick(itemId) {
 
 export function renderHeader(activeLink, currentItem = null) {
     const userResult = getCurrentUser();
-    const currentUser = userResult ? userResult.user : {};
-    const isFavorited = currentItem && (currentUser.favorites || []).includes(currentItem.id);
+    const currentUser = userResult ? userResult.user : null;
+    const isFavorited = currentItem && currentUser && (currentUser.favorites || []).includes(currentItem.id);
 
     /** @tweakable [The welcome message template for users] */
     let welcomeMessageTemplate = "Olá, {{displayName}}";
-    let displayName = session.username;
 
-    if (userResult && userResult.type === 'clients' && userResult.user.name) {
-        displayName = userResult.user.name;
+    const session = getSession();
+    let displayName = session?.username || 'Usuário';
+
+    if (currentUser && userResult.type === 'clients' && currentUser.name) {
+        displayName = currentUser.name;
     }
     
     const welcomeMessage = welcomeMessageTemplate.replace("{{displayName}}", displayName);
 
     return `
         <header class="client-header">
-            <div class="logo">🎬 CinemaStream</div>
+            <a href="#/cliente/filmes" class="logo-link"><span>M</span>euFlix</a>
             <nav class="desktop-nav">
-                <a href="#/cliente/filmes" class="btn-nav ${activeLink === 'filmes' ? 'active' : ''}"><i class="fa-solid fa-film"></i> Filmes</a>
-                <a href="#/cliente/series" class="btn-nav ${activeLink === 'series' ? 'active' : ''}"><i class="fa-solid fa-tv"></i> Séries</a>
-                <a href="#/cliente/animes" class="btn-nav ${activeLink === 'animes' ? 'active' : ''}"><i class="fa-solid fa-dragon"></i> Animes</a>
-                <a href="#/cliente/favoritos" class="btn-nav ${activeLink === 'favoritos' ? 'active' : ''}"><i class="fa-solid fa-heart"></i> Favoritos</a>
-                <a href="#/cliente/historico" class="btn-nav ${activeLink === 'historico' ? 'active' : ''}"><i class="fa-solid fa-history"></i> Histórico</a>
+                <a href="#/cliente/filmes" class="btn-nav ${activeLink === 'filmes' ? 'active' : ''}"><i class="fa-solid fa-film"></i> ${t('movies')}</a>
+                <a href="#/cliente/series" class="btn-nav ${activeLink === 'series' ? 'active' : ''}"><i class="fa-solid fa-tv"></i> ${t('series')}</a>
+                <a href="#/cliente/animes" class="btn-nav ${activeLink === 'animes' ? 'active' : ''}"><i class="fa-solid fa-dragon"></i> ${t('animes')}</a>
+                <a href="#/cliente/favoritos" class="btn-nav ${activeLink === 'favoritos' ? 'active' : ''}"><i class="fa-solid fa-heart"></i> ${t('favorites')}</a>
+                <a href="#/cliente/configuracoes-usuario" class="btn-nav ${activeLink === 'configuracoes-usuario' ? 'active' : ''}"><i class="fa-solid fa-cog"></i> ${t('config')}</a>
                  ${currentItem ? `
                     <div class="header-favorite-container">
                         <i id="header-fav-icon" class="fa-solid fa-heart header-fav-icon ${isFavorited ? 'favorited' : ''}" data-id="${currentItem.id}"></i>
@@ -103,23 +118,19 @@ export function renderHeader(activeLink, currentItem = null) {
          <nav class="mobile-nav">
             <a href="#/cliente/filmes" class="${activeLink === 'filmes' ? 'active' : ''}">
                 <i class="fa-solid fa-film"></i>
-                <span>Filmes</span>
+                <span>${t('movies')}</span>
             </a>
             <a href="#/cliente/series" class="${activeLink === 'series' ? 'active' : ''}">
                 <i class="fa-solid fa-tv"></i>
-                <span>Séries</span>
+                <span>${t('series')}</span>
             </a>
             <a href="#/cliente/animes" class="${activeLink === 'animes' ? 'active' : ''}">
                 <i class="fa-solid fa-dragon"></i>
-                <span>Animes</span>
+                <span>${t('animes')}</span>
             </a>
             <a href="#/cliente/favoritos" class="${activeLink === 'favoritos' ? 'active' : ''}">
                 <i class="fa-solid fa-heart"></i>
-                <span>Favoritos</span>
-            </a>
-            <a href="#/cliente/historico" class="${activeLink === 'historico' ? 'active' : ''}">
-                <i class="fa-solid fa-history"></i>
-                <span>Histórico</span>
+                <span>${t('favorites')}</span>
             </a>
             <button id="mobile-menu-toggle-bottom" class="mobile-nav-menu-btn">
                 <i class="fa-solid fa-bars"></i>
@@ -132,7 +143,7 @@ export function renderHeader(activeLink, currentItem = null) {
 export function renderMediaGrid(items, onPageChange, { currentPage, itemsPerPage }) {
     const userResult = getCurrentUser();
     const currentUser = userResult ? userResult.user : {};
-    const favorites = currentUser.favorites || [];
+    const favorites = currentUser?.favorites || [];
 
     const paginatedItems = items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
     
@@ -165,7 +176,7 @@ export function renderMediaGrid(items, onPageChange, { currentPage, itemsPerPage
 function renderCatalogPage(title, items, type, onPageChange) {
     const userResult = getCurrentUser();
     const currentUser = userResult ? userResult.user : {};
-    const favorites = currentUser.favorites || [];
+    const favorites = currentUser?.favorites || [];
 
     const filteredItems = items.filter(item => {
         const matchesSearch = normalizeString(item.name).includes(normalizeString(currentFilter));
@@ -188,27 +199,34 @@ function renderCatalogPage(title, items, type, onPageChange) {
     const content = `
         <div class="container">
             <div class="catalog-header">
-                <h1>${title}</h1>
-                 <div class="search-bar desktop-search">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="search-input" class="form-control" placeholder="Pesquisar ${title}..." value="${currentFilter}">
-                </div>
-                <div class="catalog-info">
-                    <span class="total-count">Todos ${items.length}</span>
-                    <div class="category-menu-wrapper">
-                        <button class="category-menu-toggle" id="category-menu-toggle" aria-label="Abrir menu de categorias">
-                            <i class="fa-solid fa-bars"></i>
-                        </button>
-                        <div class="category-menu" id="category-menu">
-                             <input type="text" id="category-search-input" class="form-control" placeholder="Pesquisar categoria...">
-                             <div id="category-links-container">
-                                ${categoriesForMenu.map(cat => `<a href="#" class="category-link ${currentCategory === cat.key ? 'active' : ''}" data-category="${cat.key}" tabindex="0">${cat.name}</a>`).join('')}
-                             </div>
+                <div class="catalog-header-top">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <h1>${title}</h1>
+                        <div class="catalog-info">
+                            <span class="total-count">Todos ${items.length}</span>
+                            <div class="category-menu-wrapper">
+                                <button class="category-menu-toggle" id="category-menu-toggle" aria-label="Abrir menu de categorias">
+                                    <i class="fa-solid fa-bars"></i>
+                                </button>
+                                <div class="category-menu" id="category-menu">
+                                     <input type="text" id="category-search-input" class="form-control" placeholder="Pesquisar categoria...">
+                                     <div id="category-links-container">
+                                        ${categoriesForMenu.map(cat => `<a href="#" class="category-link ${currentCategory === cat.key ? 'active' : ''}" data-category="${cat.key}" tabindex="0">${cat.name}</a>`).join('')}
+                                     </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                 <!-- @tweakable [Styling for the search bar on catalog pages] -->
+                <div class="search-container-wrapper">
+                    <div class="search-container">
+                        <input type="text" id="search-input" class="form-control" placeholder="Digite para pesquisar..." value="${currentFilter}">
+                        <button id="search-button" class="btn" onclick="clientSearch()">Pesquisar</button>
+                    </div>
+                </div>
             </div>
-            ${renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
+            ${filteredItems.length === 0 ? '' : renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
         </div>
     `;
     return content;
@@ -284,24 +302,31 @@ function renderAnimesPage(container) {
     const content = `
         <div class="container">
             <div class="catalog-header">
-                <h1>Animes</h1>
-                 <div class="search-bar desktop-search">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="search-input" class="form-control" placeholder="Pesquisar Animes..." value="${currentFilter}">
-                </div>
-                <div class="catalog-info">
-                    <span class="total-count">Todos ${animes.length}</span>
-                    <div class="category-menu-wrapper">
-                        <button class="anime-sort-button" id="category-menu-toggle" aria-label="Abrir menu de ordenação">
-                            ${sortOptions[currentAnimeSort]?.name || 'Ordenar'}
-                        </button>
-                        <div class="category-menu" id="category-menu">
-                             ${Object.entries(sortOptions).map(([key, value]) => `<a href="#" class="category-link ${currentAnimeSort === key ? 'active' : ''}" data-category="${key}" tabindex="0"><i class="${value.icon}"></i> ${value.name}</a>`).join('')}
+                <div class="catalog-header-top">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <h1>Animes</h1>
+                        <div class="catalog-info">
+                            <span class="total-count">Todos ${animes.length}</span>
+                            <div class="category-menu-wrapper">
+                                <button class="anime-sort-button" id="category-menu-toggle" aria-label="Abrir menu de ordenação">
+                                    ${sortOptions[currentAnimeSort]?.name || 'Ordenar'}
+                                </button>
+                                <div class="category-menu" id="category-menu">
+                                     ${Object.entries(sortOptions).map(([key, value]) => `<a href="#" class="category-link ${currentAnimeSort === key ? 'active' : ''}" data-category="${key}" tabindex="0"><i class="${value.icon}"></i> ${value.name}</a>`).join('')}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <!-- @tweakable [Styling for the search bar on the animes page] -->
+                 <div class="search-container-wrapper">
+                    <div class="search-container">
+                        <input type="text" id="search-input" class="form-control" placeholder="Digite para pesquisar..." value="${currentFilter}">
+                        <button id="search-button" class="btn" onclick="clientSearch()">Pesquisar</button>
+                    </div>
+                </div>
             </div>
-            ${renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
+            ${filteredItems.length === 0 ? '' : renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
         </div>
     `;
     return content;
@@ -319,7 +344,7 @@ function renderMovieDetails(movieId) {
     
     const userResult = getCurrentUser();
     const currentUser = userResult ? userResult.user : {};
-    const favorites = currentUser.favorites || [];
+    const favorites = currentUser?.favorites || [];
     const isFavorited = favorites.includes(movie.id);
     const embedUrl = getEmbedUrl(movie.link);
 
@@ -334,8 +359,8 @@ function renderMovieDetails(movieId) {
                 <h1>${movie.name}</h1>
                 <p><strong>Ano de Lançamento:</strong> ${movie.releaseYear || 'N/A'}</p>
                 <div class="favorite-button-wrapper">
-                    <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${movie.id}" aria-label="Marcar como favorito">
-                        <i class="fa-${isFavorited ? 'solid' : 'regular'} fa-heart"></i>
+                    <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${movie.id}" onclick="toggleFavorite('${movie.id}', this)" aria-label="Marcar como favorito">
+                        <span class="fav-icon">${isFavorited ? '❤️' : '🤍'}</span>
                         <span>${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
                     </button>
                 </div>
@@ -365,7 +390,7 @@ function renderSeriesDetails(seriesId) {
 
     const userResult = getCurrentUser();
     const currentUser = userResult ? userResult.user : {};
-    const favorites = currentUser.favorites || [];
+    const favorites = currentUser?.favorites || [];
     const isFavorited = favorites.includes(series.id);
 
     return `
@@ -379,8 +404,8 @@ function renderSeriesDetails(seriesId) {
                 <h1>${series.name}</h1>
                  <p><strong>Ano de Lançamento:</strong> ${series.releaseYear || 'N/A'}</p>
                 <div class="favorite-button-wrapper">
-                     <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${series.id}" aria-label="Marcar como favorito">
-                        <i class="fa-${isFavorited ? 'solid' : 'regular'} fa-heart"></i>
+                     <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${series.id}" onclick="toggleFavorite('${series.id}', this)" aria-label="Marcar como favorito">
+                        <span class="fav-icon">${isFavorited ? '❤️' : '🤍'}</span>
                         <span>${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
                     </button>
                 </div>
@@ -412,7 +437,7 @@ function renderAnimeDetails(animeId) {
 
     const userResult = getCurrentUser();
     const currentUser = userResult ? userResult.user : {};
-    const favorites = currentUser.favorites || [];
+    const favorites = currentUser?.favorites || [];
     const isFavorited = favorites.includes(anime.id);
 
     return `
@@ -426,8 +451,8 @@ function renderAnimeDetails(animeId) {
                 <h1>${anime.name}</h1>
                  <p><strong>Ano de Lançamento:</strong> ${anime.releaseYear || 'N/A'}</p>
                 <div class="favorite-button-wrapper">
-                     <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${anime.id}" aria-label="Marcar como favorito">
-                        <i class="fa-${isFavorited ? 'solid' : 'regular'} fa-heart"></i>
+                     <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${anime.id}" onclick="toggleFavorite('${anime.id}', this)" aria-label="Marcar como favorito">
+                        <span class="fav-icon">${isFavorited ? '❤️' : '🤍'}</span>
                         <span>${isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
                     </button>
                 </div>
@@ -489,17 +514,12 @@ function updateView(container, path) {
         <main class="page">
             ${pageContent}
         </main>
-        <button id="search-toggle-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
-        <div class="mobile-search-overlay" id="mobile-search-overlay">
-            <input type="text" id="mobile-search-input" class="form-control" placeholder="Pesquisar...">
-        </div>
         <div id="menu-overlay"></div>
         <div id="slide-in-menu">
-            <a href="#/cliente/favoritos">Favoritos</a>
-            <a href="#/cliente/historico">Histórico</a>
-            <a href="#/cliente/perfil">Perfil</a>
-            <a href="#/cliente/configuracoes">Configurações</a>
-            <button id="slide-menu-logout-btn">Sair</button>
+            <a href="#/cliente/favoritos">${t('favorites')}</a>
+            <a href="#/cliente/perfil">${t('profile')}</a>
+            <a href="#/cliente/configuracoes-usuario">${t('user_settings')}</a>
+            <button id="slide-menu-logout-btn">${t('logout')}</button>
         </div>
     `;
     
@@ -507,7 +527,7 @@ function updateView(container, path) {
      if (!itemId) {
         const userResult = getCurrentUser();
         const currentUser = userResult ? userResult.user : {};
-        const favorites = currentUser.favorites || [];
+        const favorites = currentUser?.favorites || [];
         const db = getDB();
         const items = pageType === 'filmes' ? db.movies : (pageType === 'series' ? db.series : (db.animes || []));
 
@@ -580,6 +600,13 @@ function handleEpisodeClick(e) {
 }
 
 export function renderClientPanel(container, path) {
+    const session = getSession();
+    if (!session) {
+        showToast('Sessão inválida. Por favor, faça login novamente.', 'error');
+        window.location.hash = '/login';
+        return;
+    }
+    console.log('Renderizando página:', window.location.hash, 'User:', session.username);
     updateView(container, path);
 }
 
@@ -587,21 +614,24 @@ export function attachClientListeners(container, viewOptions = {}) {
     const { pageType, id } = viewOptions;
     const currentViewType = pageType || currentView.type;
 
-    const debouncedSearch = debounce(async (value) => {
-        currentFilter = value;
-        currentPage = 1; // Reset to first page on search
-        if (currentViewType === 'favoritos') {
-            const { renderFavoritesPage } = await import('views/client/Favorites');
-            renderFavoritesPage(container);
-        } else {
-            updateView(container, `#/cliente/${currentViewType}`);
+    const handleSearch = () => {
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            console.log("Pesquisa por:", searchInput.value);
+            currentFilter = searchInput.value;
+            currentPage = 1; // Reset to first page on search
+            if (currentViewType === 'favoritos') {
+                // Favorites page has its own render logic
+                const event = new CustomEvent('clientSearch');
+                document.dispatchEvent(event);
+            } else {
+                updateView(container, `#/cliente/${currentViewType}`);
+            }
         }
-    }, 300);
-
+    };
+    
     attachCommonClientListeners(container, {
-        onSearch: (value) => {
-            debouncedSearch(value);
-        },
+        onSearch: handleSearch,
         pageType: currentViewType
     });
 
@@ -676,7 +706,10 @@ export function attachClientListeners(container, viewOptions = {}) {
     document.querySelectorAll('.favorite-btn').forEach(button => {
         button.addEventListener('click', async () => {
             const itemId = button.dataset.id;
-            await handleToggleFavorite(itemId, container);
+            // The logic is now handled by the global `toggleFavorite` function
+            // This listener is kept to prevent potential regressions if other code relies on it,
+            // but the primary action is now in the onclick attribute.
+            // await handleToggleFavorite(itemId, container);
         });
     });
 
@@ -762,7 +795,7 @@ export function attachCommonClientListeners(container, options = {}) {
         document.dispatchEvent(new CustomEvent('logout'));
     });
 
-    // Mobile search
+    // Mobile search (no longer used, but kept for now)
     const searchToggleBtn = document.getElementById('search-toggle-btn');
     const mobileSearchOverlay = document.getElementById('mobile-search-overlay');
     const mobileSearchInput = document.getElementById('mobile-search-input');
@@ -782,11 +815,17 @@ export function attachCommonClientListeners(container, options = {}) {
             }
         });
         
-        mobileSearchInput.addEventListener('input', e => options.onSearch(e.target.value));
+        mobileSearchInput.addEventListener('input', e => {
+             // This logic might need to be adapted if mobile search is re-enabled
+        });
     }
 
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
-        searchInput.addEventListener('input', e => options.onSearch(e.target.value));
+        searchInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                options.onSearch();
+            }
+        });
     }
 }

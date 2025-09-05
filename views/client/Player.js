@@ -1,5 +1,5 @@
 import { getDB, saveDB } from 'db';
-import { renderHeader } from 'views/Client';
+import { renderHeader, attachCommonClientListeners } from 'views/Client';
 import { getEmbedUrl, showToast } from 'utils';
 
 const session = JSON.parse(localStorage.getItem('session'));
@@ -11,6 +11,12 @@ const MAX_HISTORY_ITEMS = 20;
 const FAVORITED_COLOR = 'red';
 /** @tweakable [The color of the heart icon when an item is not favorited] */
 const NOT_FAVORITED_COLOR = 'grey';
+
+// --- Module-level state for the player ---
+let currentItem = null;
+let currentSeasonIndex = 0;
+let currentEpisodeIndex = 0;
+// -----------------------------------------
 
 function isFavorited(itemId) {
     if (!session?.username) return false;
@@ -54,58 +60,154 @@ function addToHistory(item) {
     showToast("Adicionado ao histórico!");
 }
 
-function updateFavoriteButtonState(button, isFavorited) {
-    const icon = button.querySelector('i');
-    const text = button.querySelector('span');
+function updatePlayerUI(link) {
+    const playerContainer = document.getElementById('player-wrapper');
+    const embedUrl = getEmbedUrl(link);
+    console.log('Loading episode:', link);
 
-    button.classList.toggle('favorited', isFavorited);
-    if (icon) {
-        icon.classList.toggle('fa-solid', isFavorited);
-        icon.classList.toggle('fa-regular', !isFavorited);
-        icon.style.color = isFavorited ? FAVORITED_COLOR : NOT_FAVORITED_COLOR;
-    }
-    if (text) {
-        text.textContent = isFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos';
+    if (embedUrl) {
+        playerContainer.innerHTML = `<iframe src="${embedUrl}" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+    } else {
+        playerContainer.innerHTML = `<div class="player-placeholder">Link inválido. <a href="${link}" target="_blank">Abrir em nova aba</a>.</div>`;
     }
 }
 
-async function handleToggleFavorite(itemId, button) {
-    const db = getDB();
-    const clientIndex = db.users.clients.findIndex(c => c.username === session.username);
-    if (clientIndex === -1) return;
+function updateNextEpisodeButtonState() {
+    const nextEpBtn = document.getElementById('next-episode-btn');
+    if (!nextEpBtn || !currentItem) return;
 
-    const client = db.users.clients[clientIndex];
-    client.favorites = client.favorites || [];
-    const itemIndex = client.favorites.indexOf(itemId);
-    const isCurrentlyFavorited = itemIndex > -1;
+    const { nextSeasonIndex, nextEpisodeIndex } = getNextEpisodeIndices();
 
-    let isNowFavorited;
-
-    if (isCurrentlyFavorited) {
-        client.favorites.splice(itemIndex, 1); // Unfavorite
-        showToast('Removido dos Favoritos!');
-        isNowFavorited = false;
+    if (nextSeasonIndex !== null) {
+        nextEpBtn.disabled = false;
     } else {
-        client.favorites.push(itemId); // Favorite
-        showToast('Adicionado aos Favoritos!');
-        isNowFavorited = true;
+        nextEpBtn.disabled = true;
+    }
+}
+
+function getNextEpisodeIndices() {
+    if (!currentItem || !currentItem.seasons) return { nextSeasonIndex: null, nextEpisodeIndex: null };
+
+    const currentSeason = currentItem.seasons[currentSeasonIndex];
+    
+    // Check for next episode in the same season
+    if (currentEpisodeIndex < currentSeason.episodes.length - 1) {
+        return { nextSeasonIndex: currentSeasonIndex, nextEpisodeIndex: currentEpisodeIndex + 1 };
     }
     
-    db.users.clients[clientIndex] = client;
+    // Check for next season
+    if (currentSeasonIndex < currentItem.seasons.length - 1) {
+        const nextSeason = currentItem.seasons[currentSeasonIndex + 1];
+        if (nextSeason && nextSeason.episodes.length > 0) {
+            return { nextSeasonIndex: currentSeasonIndex + 1, nextEpisodeIndex: 0 };
+        }
+    }
+
+    return { nextSeasonIndex: null, nextEpisodeIndex: null };
+}
+
+function loadEpisode(seasonIndex, episodeIndex) {
+    if (!currentItem || !currentItem.seasons) return;
+    
+    const season = currentItem.seasons[seasonIndex];
+    if (!season || !season.episodes[episodeIndex]) {
+        console.error(`Episode S${seasonIndex+1}E${episodeIndex+1} not found.`);
+        return;
+    }
+
+    currentSeasonIndex = seasonIndex;
+    currentEpisodeIndex = episodeIndex;
+
+    const episode = season.episodes[episodeIndex];
+    updatePlayerUI(episode.link);
+
+    // Highlight active buttons
+    document.querySelectorAll('.btn-season').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.btn-season[data-season-index="${seasonIndex}"]`)?.classList.add('active');
+    
+    document.querySelectorAll('.btn-episode').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.btn-episode[data-season-index="${seasonIndex}"][data-episode-index="${episodeIndex}"]`)?.classList.add('active');
+    
+    updateNextEpisodeButtonState();
+}
+
+function handleNextEpisode() {
+    const { nextSeasonIndex, nextEpisodeIndex } = getNextEpisodeIndices();
+    if (nextSeasonIndex !== null) {
+        console.log(`Advancing to S${nextSeasonIndex + 1}E${nextEpisodeIndex + 1}`);
+        // If changing season, we need to re-render episode list for that season first.
+        if (nextSeasonIndex !== currentSeasonIndex) {
+            const seasonButton = document.querySelector(`.btn-season[data-season-index="${nextSeasonIndex}"]`);
+            seasonButton?.click(); // This will render the episodes for the new season
+        }
+        loadEpisode(nextSeasonIndex, nextEpisodeIndex);
+    } else {
+        console.log("No next episode.");
+    }
+}
+
+function updateLikeSection() {
+    if (!currentItem) return;
+    const db = getDB();
+    const itemType = currentItem.id.startsWith('series') ? 'series' : 'animes';
+    const dbItem = db[itemType].find(i => i.id === currentItem.id);
+
+    if (!dbItem) return;
+
+    const likeCount = dbItem.likeCount || 0;
+    const likedBy = dbItem.likedBy || [];
+    const hasUserLiked = session?.username && likedBy.includes(session.username);
+
+    const likeText = document.getElementById('like-text');
+    const likeHeart = document.getElementById('like-heart');
+
+    if (likeText) {
+        if (hasUserLiked) {
+            likeText.innerHTML = `Obrigado por curtir! (${likeCount})`;
+            likeText.style.color = 'grey';
+            likeText.style.textDecoration = 'none';
+            likeText.style.cursor = 'default';
+            likeText.onclick = null;
+        } else {
+            likeText.innerHTML = `clique aqui para curtir (${likeCount})`;
+            likeText.style.color = '#4facfe';
+            likeText.style.textDecoration = 'underline';
+            likeText.style.cursor = 'pointer';
+            likeText.setAttribute('onclick', `handleLike('${currentItem.id}')`);
+        }
+    }
+    if (likeHeart) {
+        likeHeart.style.color = hasUserLiked ? 'red' : 'white';
+    }
+}
+
+function handleLikeEvent(event) {
+    const { itemId } = event.detail;
+    if (!session?.username) {
+        showToast('Você precisa estar logado para curtir.', 'error');
+        return;
+    }
+    const db = getDB();
+    const itemType = itemId.startsWith('series') ? 'series' : 'animes';
+    const itemIndex = db[itemType].findIndex(i => i.id === itemId);
+
+    if (itemIndex === -1) return;
+
+    const item = db[itemType][itemIndex];
+    item.likedBy = item.likedBy || [];
+
+    if (item.likedBy.includes(session.username)) {
+        showToast('Você já curtiu isso!', 'error');
+        return;
+    }
+
+    item.likeCount = (item.likeCount || 0) + 1;
+    item.likedBy.push(session.username);
+    
     saveDB(db);
-
-    console.log('Favorites updated:', client.favorites);
-
-    // Update the button state directly instead of re-rendering
-    if (button) {
-       updateFavoriteButtonState(button, isNowFavorited);
-    }
-
-    // Also update the header icon if it exists
-    const headerFavIcon = document.getElementById('header-fav-icon');
-    if (headerFavIcon && headerFavIcon.dataset.id === itemId) {
-        headerFavIcon.classList.toggle('favorited', isNowFavorited);
-    }
+    showToast('Curtido com sucesso!');
+    console.log(`Curtida registrada para ${itemId}: ${item.likeCount}`);
+    updateLikeSection();
 }
 
 function handleEpisodeClick(e) {
@@ -127,68 +229,61 @@ function handleEpisodeClick(e) {
 }
 
 function attachPlayerListeners(item, container) {
-    document.querySelectorAll('.favorite-btn-player').forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const currentButton = e.currentTarget;
-            await handleToggleFavorite(item.id, currentButton);
-        });
-    });
+    // The favorite button now uses the global `toggleFavorite` via its `onclick` attribute.
+    // The local event listener and handler function have been removed to prevent the "add and remove at the same time" bug.
+    // The global event handler in `app.js` will manage the logic and UI updates.
+    console.log("Player listeners attached. Favorite logic handled globally.");
 
-    const headerFavIcon = document.getElementById('header-fav-icon');
-    if(headerFavIcon) {
-        const favDropdown = document.getElementById('header-fav-dropdown');
-        headerFavIcon.addEventListener('click', async () => {
-            // Use the global toggle function
-            window.toggleFavorite(item.id);
-            
-            if (favDropdown) {
-                const isNowFavorited = headerFavIcon.classList.contains('favorited');
-                favDropdown.innerHTML = isNowFavorited 
-                    ? 'Adicionado aos Favoritos! <a href="#/cliente/favoritos">Ver lista</a>'
-                    : 'Removido dos Favoritos!';
-                favDropdown.classList.add('show');
-                setTimeout(() => favDropdown.classList.remove('show'), 2000);
-            }
-        });
-    }
+    document.removeEventListener('handleLike', handleLikeEvent);
+    document.addEventListener('handleLike', handleLikeEvent);
 
     const seasonButtons = document.querySelectorAll('.btn-season');
     if (seasonButtons.length > 0) {
-        seasonButtons.forEach(btn => {
+        seasonButtons.forEach((btn, sIndex) => {
             btn.addEventListener('click', e => {
+                console.log(`Temporada selecionada: ${sIndex + 1}`);
                 seasonButtons.forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
 
-                const seasonNumber = parseInt(e.target.dataset.season);
-                const db = getDB();
-                const currentItem = (item.id.startsWith('series') ? db.series : db.animes).find(s => s.id === item.id);
-                const season = currentItem.seasons.find(s => s.seasonNumber === seasonNumber);
-                
+                const season = item.seasons[sIndex];
                 const episodesContainer = document.getElementById('episodes-container');
                 episodesContainer.innerHTML = `
                     <h4>Episódios</h4>
                     <div class="episode-buttons">
-                        ${season.episodes.map(ep => `
-                            <button class="btn btn-secondary btn-episode" data-link="${ep.link}">Episódio ${ep.episodeNumber}</button>
+                        ${season.episodes.map((ep, eIndex) => `
+                            <button class="btn btn-secondary btn-episode" data-season-index="${sIndex}" data-episode-index="${eIndex}">Episódio ${ep.episodeNumber}</button>
                         `).join('')}
                     </div>
                 `;
                 document.querySelectorAll('.btn-episode').forEach(epBtn => {
-                    epBtn.addEventListener('click', handleEpisodeClick);
+                    epBtn.addEventListener('click', (ev) => {
+                        const sIdx = parseInt(ev.target.dataset.seasonIndex);
+                        const eIdx = parseInt(ev.target.dataset.episodeIndex);
+                        loadEpisode(sIdx, eIdx);
+                    });
                 });
+
+                // Auto-load first episode of the selected season
+                if (season.episodes.length > 0) {
+                    loadEpisode(sIndex, 0);
+                } else {
+                    document.getElementById('player-wrapper').innerHTML = '<div class="player-placeholder">Nenhum episódio nesta temporada.</div>';
+                }
             });
         });
-        // Auto-click first season
-        if(seasonButtons[0]) seasonButtons[0].click();
-    }
 
-    document.getElementById('logout-btn')?.addEventListener('click', () => {
-        document.dispatchEvent(new CustomEvent('logout'));
-    });
+        // Trigger click on first season to render its episodes, then auto-load first episode
+        if (seasonButtons[0]) {
+            seasonButtons[0].click();
+        }
+    }
     
-    document.getElementById('slide-menu-logout-btn')?.addEventListener('click', () => {
-        document.dispatchEvent(new CustomEvent('logout'));
-    });
+    const nextEpBtn = document.getElementById('next-episode-btn');
+    if (nextEpBtn) {
+        nextEpBtn.addEventListener('click', handleNextEpisode);
+    }
+    
+    attachCommonClientListeners(container);
 }
 
 function renderItemContent(item) {
@@ -197,6 +292,8 @@ function renderItemContent(item) {
 
     let playerHTML = '';
     let seasonHTML = '';
+    let nextEpisodeButtonHTML = '';
+    let likeSectionHTML = '';
     
     if (itemType === 'filme') {
         if (!item.link) {
@@ -208,16 +305,33 @@ function renderItemContent(item) {
             ? `<iframe src="${embedUrl}" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`
             : `<div class="container"><a href="${item.link}" target="_blank" class="btn btn-primary">Assistir em Nova Aba</a></div>`;
     } else {
-        // For series/animes, player is initially empty.
+        // For series/animes, player is initially a placeholder, will be filled by `loadEpisode`.
         playerHTML = '<div class="player-placeholder">Selecione um episódio para assistir.</div>';
         seasonHTML = `
             <h3>Temporadas</h3>
             <div class="season-buttons">
-                ${item.seasons.map(season => `
-                    <button class="btn btn-secondary btn-season" data-season="${season.seasonNumber}">Temporada ${season.seasonNumber}</button>
+                ${item.seasons.map((season, sIndex) => `
+                    <button class="btn btn-secondary btn-season" data-season-index="${sIndex}">Temporada ${season.seasonNumber}</button>
                 `).join('')}
             </div>
             <div id="episodes-container"></div>
+        `;
+        /* @tweakable [Styling for the next episode button] */
+        nextEpisodeButtonHTML = `
+            <div class="next-episode-container">
+                 <button id="next-episode-btn" class="btn">Próximo Episódio</button>
+            </div>
+        `;
+        /* @tweakable [Styling for the like section in the player footer] */
+        likeSectionHTML = `
+            <div class="like-section-container">
+                <div class="like-section-divider"></div>
+                <div class="like-section-content">
+                    <span id="like-heart" class="like-heart">❤️</span>
+                    <span id="like-text" class="like-text">clique aqui para curtir</span>
+                </div>
+                <div class="like-section-divider"></div>
+            </div>
         `;
     }
 
@@ -232,13 +346,15 @@ function renderItemContent(item) {
                 <button 
                     class="favorite-btn-player ${isCurrentlyFavorited ? 'favorited' : ''}" 
                     data-id="${item.id}"
-                    onclick="toggleFavorite('${item.id}')">
-                    <i id="favoriteIcon_${item.id}" class="fa-${isCurrentlyFavorited ? 'solid' : 'regular'} fa-heart" style="color: ${isCurrentlyFavorited ? FAVORITED_COLOR : NOT_FAVORITED_COLOR};"></i>
-                    <span id="favoriteText_${item.id}" style="margin-left: 5px;">${isCurrentlyFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
+                    onclick="toggleFavorite('${item.id}', this)">
+                    <span class="fav-icon">${isCurrentlyFavorited ? '❤️' : '🤍'}</span>
+                    <span id="favoriteText_${item.id}">${isCurrentlyFavorited ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}</span>
                 </button>
             </div>
             <p>${item.description}</p>
             ${seasonHTML}
+            ${nextEpisodeButtonHTML}
+            ${likeSectionHTML}
         </div>
     `;
 }
@@ -272,6 +388,9 @@ export function renderPlayerPage(container) {
         showToast("Item não encontrado.", "error");
         return;
     }
+
+    // Set module-level item for other functions to access
+    currentItem = item;
     
     // Determine the active link for the header
     let activeLink = 'filmes';
@@ -288,11 +407,14 @@ export function renderPlayerPage(container) {
             <a href="#/cliente/favoritos">Favoritos</a>
             <a href="#/cliente/historico">Histórico</a>
             <a href="#/cliente/perfil">Perfil</a>
-            <a href="#/cliente/configuracoes">Configurações</a>
+            <a href="#/cliente/configuracoes-usuario">Configurações</a>
             <button id="slide-menu-logout-btn">Sair</button>
         </div>
     `;
     
     addToHistory(item);
     attachPlayerListeners(item, container);
+    if(item.id.startsWith('series') || item.id.startsWith('anime')) {
+        updateLikeSection();
+    }
 }

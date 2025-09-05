@@ -182,6 +182,30 @@ export function debounce(func, delay = 300) {
     };
 }
 
+/**
+ * @tweakable [Set to true to show a toast message when an element is not found for an event listener]
+ */
+const SHOW_UI_ERROR_TOASTS = false;
+
+/**
+ * Safely adds an event listener to an element, checking for its existence first.
+ * @param {string} selector - The CSS selector for the element.
+ * @param {string} event - The event type to listen for (e.g., 'click').
+ * @param {Function} handler - The event handler function.
+ * @param {object} [options] - Optional event listener options.
+ */
+export function safeAddEventListener(selector, event, handler, options) {
+    const element = document.querySelector(selector);
+    if (element) {
+        element.addEventListener(event, handler, options);
+    } else {
+        console.warn(`Element not found for selector "${selector}" on page ${window.location.hash}. Event listener "${event}" not attached.`);
+        if (SHOW_UI_ERROR_TOASTS) {
+            showToast(`Erro interno: Elemento de UI não encontrado (${selector}).`, 'error');
+        }
+    }
+}
+
 export function renderPaginationControls(container, currentPage, totalPages, onPageChange) {
     if (!container || totalPages <= 1) {
         if(container) container.innerHTML = '';

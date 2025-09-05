@@ -49,6 +49,8 @@ const initialData = {
             "category": "drama",
             "releaseYear": 2022,
             "createdAt": "2023-10-25T11:00:00.000Z",
+            "likeCount": 0,
+            "likedBy": [],
             "seasons": [
                 { 
                     "seasonNumber": 1, 
@@ -69,6 +71,8 @@ const initialData = {
             "releaseYear": 2024,
             "createdAt": "2024-01-15T12:00:00.000Z",
             "popularity": 85,
+            "likeCount": 0,
+            "likedBy": [],
             "seasons": [
                 { 
                     "seasonNumber": 1, 
@@ -86,15 +90,24 @@ const initialData = {
 function deepMerge(target, source) {
     for (const key in source) {
         if (source[key] instanceof Object && key in target) {
-            Object.assign(source[key], deepMerge(target[key], source[key]));
+            if (Array.isArray(source[key])) {
+                 // Simple array merge: just overwrite, as deep merging arrays with objects is complex
+                 // and not required for this DB structure.
+                 target[key] = source[key];
+            } else {
+                target[key] = deepMerge(target[key], source[key]);
+            }
+        } else {
+             target[key] = source[key];
         }
     }
-    Object.assign(target || {}, source);
     return target;
 }
 
 export async function initDB() {
     let dbData = null;
+    let localData = localStorage.getItem(DB_NAME);
+
     try {
         const response = await fetch(`${REMOTE_DB_URL}?t=${new Date().getTime()}`); // bust cache
         if (!response.ok) {
@@ -104,20 +117,27 @@ export async function initDB() {
         console.log('Banco de dados carregado do GitHub com sucesso.');
     } catch (error) {
         console.warn('Erro ao carregar JSON do GitHub, usando localStorage como fallback:', error);
-        const localData = localStorage.getItem(DB_NAME);
         if (localData) {
             try {
                 dbData = JSON.parse(localData);
             } catch (e) {
                 console.error("Error parsing local DB, initializing with default.", e);
+                // If local data is corrupt, fall through to use initialData
             }
         }
     }
 
-    // Ensure the database has the full structure, using initialData as a template
-    // This prevents errors from missing keys like `users` or `tests`.
-    const finalDB = deepMerge(dbData || {}, JSON.parse(JSON.stringify(initialData)));
-    saveDB(finalDB);
+    // If no data from remote or local, initialize with default data.
+    if (!dbData) {
+        console.log("Nenhum banco de dados encontrado. Inicializando com dados padrão.");
+        dbData = JSON.parse(JSON.stringify(initialData));
+    } else {
+        // Ensure the database has the full structure, using initialData as a template
+        // This prevents errors if the loaded DB is missing new keys.
+        dbData = deepMerge(dbData, JSON.parse(JSON.stringify(initialData)));
+    }
+    
+    saveDB(dbData);
 }
 
 export function getDB() {
@@ -149,6 +169,19 @@ export function saveDB(db) {
     if (db && !Array.isArray(db.animes)) {
         db.animes = [];
     }
+    // Ensure series and animes have like properties
+    ['series', 'animes'].forEach(type => {
+        if (db && Array.isArray(db[type])) {
+            db[type].forEach(item => {
+                if (typeof item.likeCount !== 'number') {
+                    item.likeCount = 0;
+                }
+                if (!Array.isArray(item.likedBy)) {
+                    item.likedBy = [];
+                }
+            });
+        }
+    });
     localStorage.setItem(DB_NAME, JSON.stringify(db));
 }
 

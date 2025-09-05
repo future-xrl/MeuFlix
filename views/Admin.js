@@ -6,6 +6,8 @@ import { renderAddMoviePage } from 'views/admin/AddMovie';
 import { renderAddSeriesPage } from 'views/admin/AddSeries';
 import { renderAddAnimePage } from 'views/admin/AddAnime';
 import { renderBackupPage } from 'views/admin/Backup';
+import { renderDebugPage } from 'views/admin/Debug';
+import { renderConfigPage } from 'views/admin/Config';
 
 export function renderAdminPanel(container, path) {
     const subpage = path.split('/')[2] || 'painel';
@@ -34,7 +36,14 @@ export function renderAdminPanel(container, path) {
         case 'backup':
             renderBackupPage(container);
             break;
+        case 'debug':
+            renderDebugPage(container);
+            break;
+        case 'configuracoes':
+            renderConfigPage(container);
+            break;
         default:
             renderDashboardPage(container);
     }
 }
+

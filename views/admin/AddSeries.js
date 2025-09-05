@@ -160,24 +160,8 @@ function attachSeriesFormListeners(seriesToEdit = null) {
         renderAddSeriesPage(document.getElementById('app'));
     });
 
-    document.getElementById('series-list').addEventListener('click', e => {
-        const db = getDB();
-        if (e.target.classList.contains('edit-series')) {
-            const seriesId = e.target.dataset.id;
-            const series = db.series.find(s => s.id === seriesId);
-            renderAddSeriesPage(document.getElementById('app'), series);
-        }
-        if (e.target.classList.contains('delete-series')) {
-            if (confirm('Deseja excluir esta série?')) {
-                const seriesId = e.target.dataset.id;
-                let db = getDB();
-                db.series = db.series.filter(s => s.id !== seriesId);
-                saveDB(db);
-                showToast('Série excluída!');
-                renderAddSeriesPage(document.getElementById('app'));
-            }
-        }
-    });
+    // The delete functionality is now handled by a global event listener in app.js
+    // to simplify state management and avoid attaching multiple listeners.
 
     const cancelBtn = document.getElementById('cancel-edit-series');
     if(cancelBtn) {
@@ -234,8 +218,8 @@ export function renderAddSeriesPage(container, seriesToEdit = null) {
                     <li>
                         <span>${s.name}</span>
                         <div class="actions">
-                            <button class="btn btn-secondary btn-sm edit-series" data-id="${s.id}">Editar</button>
-                            <button class="btn btn-danger btn-sm delete-series" data-id="${s.id}">Excluir</button>
+                            <button class="btn btn-secondary" onclick="editItem('${s.id}', 'series')">Editar</button>
+                            <button class="btn btn-danger" onclick="deleteItem('${s.id}', 'series')">Excluir</button>
                         </div>
                     </li>
                 `).join('')}

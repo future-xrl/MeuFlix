@@ -3,6 +3,7 @@ import { showToast, generateNumericId, normalizeString, formatDate, renderPagina
 import { renderLayout } from 'views/admin/Layout';
 
 let currentPage = 1;
+/* @tweakable [Number of items per page on the Manage Clients screen] */
 const ITEMS_PER_PAGE = 10;
 let currentSearchTerm = '';
 

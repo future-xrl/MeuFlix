@@ -1,8 +1,10 @@
 import { getDB } from 'db';
 import { normalizeString, renderPaginationControls } from 'utils';
 import { renderHeader, renderMediaGrid, attachClientListeners } from 'views/Client';
+import { t } from 'i18n';
 
 let currentPage = 1;
+/* @tweakable [Number of items per page on the favorites page] */
 const ITEMS_PER_PAGE = 20;
 let currentFilter = '';
 
@@ -48,14 +50,21 @@ export function renderFavoritesPage(container) {
     const pageContent = `
         <div class="container">
             <div class="catalog-header">
-                <h1>Meus Favoritos</h1>
-                <div class="search-bar desktop-search">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="search-input" class="form-control" placeholder="Pesquisar nos favoritos..." value="${currentFilter}">
+                 <div class="catalog-header-top">
+                    <div style="width:100%; display: flex; justify-content: space-between; align-items: center;">
+                        <h1>Meus Favoritos</h1>
+                        <span class="total-count">${filteredItems.length} itens</span>
+                    </div>
                 </div>
-                <span class="total-count">${filteredItems.length} itens</span>
+                <!-- @tweakable [Styling for the search bar on the favorites page] -->
+                <div class="search-container-wrapper">
+                    <div class="search-container">
+                        <input type="text" id="search-input" class="form-control" placeholder="Digite para pesquisar..." value="${currentFilter}">
+                        <button id="search-button" class="btn" onclick="clientSearch()">Pesquisar</button>
+                    </div>
+                </div>
             </div>
-            ${renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
+            ${filteredItems.length === 0 ? '' : renderMediaGrid(filteredItems, onPageChange, { currentPage, itemsPerPage: ITEMS_PER_PAGE })}
         </div>
     `;
 
@@ -64,28 +73,33 @@ export function renderFavoritesPage(container) {
         <main class="page">
             ${pageContent}
         </main>
-        <button id="search-toggle-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
-        <div class="mobile-search-overlay" id="mobile-search-overlay">
-            <input type="text" id="mobile-search-input" class="form-control" placeholder="Pesquisar...">
-        </div>
         <div id="menu-overlay"></div>
         <div id="slide-in-menu">
             <a href="#/cliente/favoritos" class="active">Favoritos</a>
             <a href="#/cliente/historico">Histórico</a>
             <a href="#/cliente/perfil">Perfil</a>
-            <a href="#/cliente/configuracoes">Configurações</a>
+            <a href="#/cliente/configuracoes-usuario">${t('user_settings')}</a>
             <button id="slide-menu-logout-btn">Sair</button>
         </div>
     `;
 
     renderPaginationControls(document.getElementById('pagination-container'), currentPage, totalPages, onPageChange);
 
-    attachClientListeners(container, {
-        onSearch: (value) => {
-            currentFilter = value;
+    const handleSearch = () => {
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            currentFilter = searchInput.value;
             currentPage = 1;
+            console.log("Pesquisa por:", currentFilter);
             renderFavoritesPage(container);
-        },
+        }
+    };
+    
+    document.removeEventListener('clientSearch', handleSearch); // Avoid duplicate listeners
+    document.addEventListener('clientSearch', handleSearch, { once: true });
+
+    attachClientListeners(container, {
+        onSearch: handleSearch,
         pageType: 'favoritos',
         id: null
     });

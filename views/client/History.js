@@ -3,7 +3,7 @@ import { normalizeString, renderPaginationControls, formatDate } from 'utils';
 import { renderHeader, attachCommonClientListeners } from 'views/Client';
 
 /* @tweakable [Number of history items to display per page] */
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 12;
 let currentPage = 1;
 
 /** @tweakable [The maximum number of pages to show in the history] */

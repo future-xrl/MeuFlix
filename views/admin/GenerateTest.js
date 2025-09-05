@@ -77,5 +77,9 @@ export function renderGenerateTestPage(container) {
     renderLayout(container, content, 'Gerar Teste');
 
     const form = document.getElementById('generate-test-form');
-    form.addEventListener('submit', handleGenerateTest);
+    if (form) {
+        form.addEventListener('submit', handleGenerateTest);
+    } else {
+        console.warn('Element #generate-test-form not found on page #/admin/gerar-teste.');
+    }
 }

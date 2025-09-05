@@ -9,9 +9,6 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>M</text></svg>">
 </head>
 <body>
-    <div id="splash-screen">
-        <div class="logo-m">M</div>
-    </div>
     <div id="app"></div>
     <div id="toast-container"></div>
     <div id="modal-container"></div>
@@ -57,7 +54,7 @@
             const isFavoriting = !buttonElement.classList.contains('favorited');
             if (isFavoriting) {
                  // The user requested log
-                console.log("Animação de ursinho ajustada");
+                console.log("Animação de ursinho iniciada");
                 playFavoriteAnimation(buttonElement);
             }
 
@@ -91,66 +88,37 @@
         };
 
         /**
-         * @tweakable [Animation durations for the teddy bear effect on desktop]
+         * @tweakable [Animation durations for the teddy bear effect]
          */
-        const TEDDY_ANIMATION_DURATIONS_DESKTOP = {
-            fall: 1500, // in ms
-            grab: 300,  // in ms
-            raiseArms: 500, // in ms
-            walk: 3000, // in ms
-        };
-
-        /**
-         * @tweakable [Animation durations for the teddy bear effect on mobile]
-         */
-        const TEDDY_ANIMATION_DURATIONS_MOBILE = {
-            fall: 750,  // in ms
-            grab: 150,  // in ms
-            raiseArms: 250, // in ms
-            walk: 1500, // in ms
+        const TEDDY_ANIMATION_DURATIONS = {
+            fall: 500, // in ms
+            grab: 200, // in ms
+            run: 1000, // in ms
         };
 
         function playFavoriteAnimation(buttonElement) {
-            const isMobile = window.innerWidth <= 768;
-            const durations = isMobile ? TEDDY_ANIMATION_DURATIONS_MOBILE : TEDDY_ANIMATION_DURATIONS_DESKTOP;
-            
             const buttonRect = buttonElement.getBoundingClientRect();
-            
+
             const teddy = document.createElement('div');
             teddy.className = 'teddy-bear';
-            teddy.innerHTML = `
-                <svg viewBox="0 0 100 100" class="teddy-svg">
-                    <g class="teddy-arms">
-                        <path class="teddy-arm" d="M25,70 a 15,15 0 0,0 -15,-10" />
-                        <path class="teddy-arm" d="M75,70 a 15,15 0 0,1 15,-10" />
-                    </g>
-                    <circle class="teddy-body" cx="50" cy="65" r="30"/>
-                    <circle class="teddy-head" cx="50" cy="35" r="25"/>
-                    <circle class="teddy-ear" cx="30" cy="15" r="10"/>
-                    <circle class="teddy-ear" cx="70" cy="15" r="10"/>
-                    <circle class="teddy-eye" cx="42" cy="35" r="3"/>
-                    <circle class="teddy-eye" cx="58" cy="35" r="3"/>
-                    <circle class="teddy-nose" cx="50" cy="42" r="4"/>
-                </svg>
-                <span class="heart">❤️</span>
-            `;
             
+            const heart = document.createElement('span');
+            heart.className = 'heart';
+            heart.textContent = '❤️';
+            teddy.appendChild(heart);
+
             document.body.appendChild(teddy);
 
-            // Set initial position for JS animation
-            const startTop = -100;
-            const endTop = buttonRect.top + (buttonRect.height / 2) - (teddy.offsetHeight / 2);
-            const startLeft = buttonRect.left + (buttonRect.width / 2) - (teddy.offsetWidth / 2);
-            teddy.style.top = `${startTop}px`;
-            teddy.style.left = `${startLeft}px`;
-            
             // 1. Fall animation
-            teddy.classList.add('fall');
+            const fallStartTop = -100; // Start off-screen
+            const fallEndTop = buttonRect.top;
+            const fallStartLeft = buttonRect.left + (buttonRect.width / 2) - (teddy.offsetWidth / 2);
+
             const fallAnimation = teddy.animate([
-                { top: `${startTop}px` },
-                { top: `${endTop}px` }
+                { top: `${fallStartTop}px`, left: `${fallStartLeft}px` },
+                { top: `${fallEndTop}px`, left: `${fallStartLeft}px` }
             ], {
-                duration: durations.fall,
+                duration: TEDDY_ANIMATION_DURATIONS.fall,
                 easing: 'ease-out',
                 fill: 'forwards'
             });
@@ -159,34 +127,26 @@
                 // 2. "Grab" the heart
                 const buttonIcon = buttonElement.querySelector('.fav-icon');
                 if (buttonIcon) buttonIcon.style.opacity = '0';
-                
-                const heartEl = teddy.querySelector('.heart');
-                heartEl.style.opacity = '1';
+                heart.style.opacity = '1';
 
                 setTimeout(() => {
-                    // 3. Raise arms
-                    teddy.classList.add('raise-arms');
+                    // 3. Run away animation
+                    const runEndLeft = -100; // Run off-screen to the left
+                    const runAnimation = teddy.animate([
+                        { transform: 'translateX(0)' },
+                        { transform: `translateX(${runEndLeft - fallStartLeft}px)` }
+                    ], {
+                        duration: TEDDY_ANIMATION_DURATIONS.run,
+                        easing: 'linear',
+                        fill: 'forwards'
+                    });
 
-                    setTimeout(() => {
-                        // 4. Walk away
-                        const walkEndLeft = -100;
-                        const walkAnimation = teddy.animate([
-                            { left: `${startLeft}px` },
-                            { left: `${walkEndLeft}px` }
-                        ], {
-                            duration: durations.walk,
-                            easing: 'linear',
-                            fill: 'forwards'
-                        });
-
-                        walkAnimation.onfinish = () => {
-                            // 5. Cleanup
-                            teddy.remove();
-                            if (buttonIcon) buttonIcon.style.opacity = '1';
-                        };
-                    }, durations.raiseArms);
-
-                }, durations.grab);
+                    runAnimation.onfinish = () => {
+                        // 4. Cleanup
+                        teddy.remove();
+                        if (buttonIcon) buttonIcon.style.opacity = '1'; // Restore icon visibility
+                    };
+                }, TEDDY_ANIMATION_DURATIONS.grab);
             };
         }
     </script>

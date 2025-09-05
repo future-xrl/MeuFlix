@@ -160,25 +160,6 @@ function attachAnimeFormListeners(animeToEdit = null) {
         renderAddAnimePage(document.getElementById('app'));
     });
 
-    document.getElementById('anime-list').addEventListener('click', e => {
-        const db = getDB();
-        if (e.target.classList.contains('edit-anime')) {
-            const animeId = e.target.dataset.id;
-            const anime = db.animes.find(s => s.id === animeId);
-            renderAddAnimePage(document.getElementById('app'), anime);
-        }
-        if (e.target.classList.contains('delete-anime')) {
-            if (confirm('Deseja excluir este anime?')) {
-                const animeId = e.target.dataset.id;
-                let db = getDB();
-                db.animes = db.animes.filter(s => s.id !== animeId);
-                saveDB(db);
-                showToast('Anime excluído!');
-                renderAddAnimePage(document.getElementById('app'));
-            }
-        }
-    });
-
     const cancelBtn = document.getElementById('cancel-edit-anime');
     if(cancelBtn) {
         cancelBtn.addEventListener('click', () => renderAddAnimePage(document.getElementById('app')));
@@ -234,8 +215,8 @@ export function renderAddAnimePage(container, animeToEdit = null) {
                     <li>
                         <span>${s.name}</span>
                         <div class="actions">
-                            <button class="btn btn-secondary btn-sm edit-anime" data-id="${s.id}">Editar</button>
-                            <button class="btn btn-danger btn-sm delete-anime" data-id="${s.id}">Excluir</button>
+                            <button class="btn btn-secondary" onclick="editItem('${s.id}', 'animes')">Editar</button>
+                            <button class="btn btn-danger" onclick="deleteItem('${s.id}', 'animes')">Excluir</button>
                         </div>
                     </li>
                 `).join('')}

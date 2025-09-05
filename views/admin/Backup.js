@@ -19,6 +19,11 @@ async function handlePublishToGitHub() {
         showToast('Por favor, insira o token do GitHub.', 'error');
         return;
     }
+
+    const publishBtn = document.getElementById('publish-btn');
+    /* @tweakable [Text shown on the publish button while publishing is in progress] */
+    publishBtn.textContent = 'Publicando...';
+    publishBtn.disabled = true;
     
     try {
         await publishToGitHub(token);
@@ -27,12 +32,14 @@ async function handlePublishToGitHub() {
             localStorage.setItem('githubToken', token);
             showToast('Token salvo localmente.');
         } else {
-             // We don't remove it here, as the user might uncheck it by mistake
-             // but wants to use the fixed publish button.
-             // The token is only removed on logout or when publishing without the box checked.
+             localStorage.removeItem('githubToken');
         }
     } catch (error) {
          showToast(error.message, 'error');
+    } finally {
+        /* @tweakable [Text shown on the publish button after the operation is complete] */
+        publishBtn.textContent = 'Publicar no GitHub';
+        publishBtn.disabled = false;
     }
 }
 
