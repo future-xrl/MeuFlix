@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StartFlix</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    
+
+    <div id="main-view">
+        <header class="main-header">
+            
+        </header>
+
+        <main id="home-grid-view">
+            <h2 class="page-title">Início</h2>
+            <button id="home-logout-btn">Sair / Logout</button>
+            <div id="home-grid-container">
+                <div class="grid-item" id="movies-btn" style="background: linear-gradient(45deg, #E50914, #F7931A);">
+                    <div class="icon-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="64px" height="64px"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                    <span>FILMES</span>
+                </div>
+                <div class="grid-item" id="series-btn" style="background: linear-gradient(45deg, #8A2BE2, #4169E1);">
+                    <div class="icon-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="64px" height="64px"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+                    </div>
+                    <span>SERIES</span>
+                </div>
+                <div class="grid-item" id="requests-btn" style="background: linear-gradient(45deg, #90EE90, #2E8B57);">
+                    <div class="icon-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="64px" height="64px"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </div>
+                    <span>FAZER PEDIDOS</span>
+                </div>
+                <div class="grid-item" id="favorites-btn" style="background: linear-gradient(45deg, #90EE90, #2E8B57);">
+                    <div class="icon-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="red" width="64px" height="64px"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                    <span>MEUS FAVORITOS</span>
+                </div>
+            </div>
+        </main>
+
+        <main id="catalog" class="catalog-container hidden">
+            <button id="back-to-grid" class="back-btn">← Voltar</button>
+            <!-- Catalogs will be loaded here -->
+            <section id="movies-catalog" class="catalog-category">
+                <h2>Filmes</h2>
+                <div class="search-container">
+                    <input type="search" id="movie-search-input" placeholder="Pesquisar filmes...">
+                </div>
+                <div class="carousel">
+                    <div class="carousel-inner" id="movies-grid"></div>
+                </div>
+            </section>
+
+            <section id="series-catalog" class="catalog-category">
+                <h2>Séries</h2>
+                 <div class="search-container">
+                    <input type="search" id="series-search-input" placeholder="Pesquisar séries...">
+                </div>
+                <div class="carousel">
+                    <div class="carousel-inner" id="series-grid"></div>
+                </div>
+            </section>
+        </main>
+
+        <main id="favorites-catalog-view" class="catalog-container hidden">
+             <button id="back-to-grid-from-favorites" class="back-btn">← Voltar</button>
+             <section class="catalog-category">
+                <h2>Meus Favoritos</h2>
+                <div class="carousel">
+                    <div class="carousel-inner" id="favorites-grid"></div>
+                </div>
+            </section>
+        </main>
+
+        <main id="requests-view" class="catalog-container hidden">
+            <button id="back-to-grid-from-requests" class="back-btn">← Voltar</button>
+            <section class="catalog-category">
+                <h2>Fazer um Pedido</h2>
+                <div id="user-notifications"></div>
+                <p>Não encontrou o que procurava? Peça aqui!</p>
+                <form id="request-form">
+                    <input type="text" id="request-title" placeholder="Nome do Filme ou Série" required>
+                    <button type="submit">Enviar Pedido</button>
+                </form>
+                <div id="request-feedback" class="result-box hidden" style="margin-top: 20px;"></div>
+            </section>
+        </main>
+
+    </div>
+
+    <div id="player-view" class="hidden">
+        <button id="back-to-catalog" class="back-btn">← Voltar para os catalogos</button>
+        <div class="player-content-wrapper">
+            <div id="video-player-container"></div>
+            <div class="player-sidebar">
+                <div id="video-details">
+                    <h1 id="video-title"></h1>
+                    <button id="favorite-btn" class="action-btn">Adicionar aos Favoritos</button>
+                    <button id="toggle-description-btn" class="action-btn">Ver Descrição</button>
+                    <p id="video-description" class="hidden"></p>
+                </div>
+                <div id="series-player-details" class="hidden">
+                    <h2>Episódios</h2>
+                    <div id="seasons-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="home.js"></script>
+</body>
+</html>

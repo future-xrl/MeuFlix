@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Administrador</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="admin-password-prompt" class="login-container">
+        <div class="login-box">
+            <h1>Acesso Administrador</h1>
+            <form id="admin-password-form">
+                <input type="password" id="admin-password" placeholder="Senha" required>
+                <button type="submit">Entrar</button>
+                <p id="admin-error-message" class="error-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-panel" class="hidden">
+        <aside class="sidebar">
+            <header>
+                <h2>Admin</h2>
+            </header>
+            <nav>
+                <ul>
+                    <li>
+                        <button class="nav-btn publish-btn" id="publish-btn">
+                            Publicar
+                            <span id="publish-notification" class="notification hidden"></span>
+                        </button>
+                    </li>
+                    <li><button class="nav-btn" data-target="generate-code">Gerar Código</button></li>
+                    <li><button class="nav-btn" data-target="my-tests">Meus Testes</button></li>
+                    <li><button class="nav-btn" data-target="activated-codes">Meus Cod. Ativados</button></li>
+                    <li><button class="nav-btn" data-target="expired-codes">Vencidos</button></li>
+                    <li><button class="nav-btn" data-target="add-movie">Adicionar Filme</button></li>
+                    <li><button class="nav-btn" data-target="add-series">Adicionar Série</button></li>
+                    <li><button class="nav-btn" data-target="message-box">Caixa de msg</button></li>
+                </ul>
+            </nav>
+            <footer>
+                <button id="logout-btn">Sair</button>
+            </footer>
+        </aside>
+        <main id="admin-content" class="admin-main">
+            <div id="loading-indicator" class="hidden">
+                <p>Carregando dados do banco de dados...</p>
+            </div>
+            <!-- Content will be loaded here by admin.js -->
+            <section id="generate-code" class="admin-section">
+                <h2>Gerar Código de Teste</h2>
+                <form id="generate-code-form">
+                    <input type="text" id="code-description" placeholder="Descrição (ex: Cliente João)" required>
+                    <button type="submit">Gerar Código (7 dias)</button>
+                </form>
+                <div id="generated-code-result" class="result-box hidden">
+                    <p>Código Gerado:</p>
+                    <strong id="new-code"></strong>
+                    <p>Expira em: <span id="new-code-expiry"></span></p>
+                </div>
+            </section>
+
+            <section id="my-tests" class="admin-section hidden">
+                <h2>Meus Testes Gerados</h2>
+                <div class="search-container">
+                    <input type="search" id="tests-search-input" placeholder="Pesquisar por código ou descrição...">
+                </div>
+                <div id="tests-list"></div>
+            </section>
+
+            <section id="activated-codes" class="admin-section hidden">
+                <h2>Códigos Ativados</h2>
+                <div class="search-container">
+                    <input type="search" id="activated-codes-search" placeholder="Pesquisar por nome ou código...">
+                </div>
+                <div id="activated-codes-list"></div>
+            </section>
+
+            <section id="expired-codes" class="admin-section hidden">
+                <h2>Códigos Vencidos</h2>
+                <div class="search-container">
+                    <input type="search" id="expired-codes-search-input" placeholder="Pesquisar por código, descrição ou nome...">
+                </div>
+                <div id="expired-codes-list"></div>
+            </section>
+
+            <section id="add-movie" class="admin-section hidden">
+                <h2>Adicionar Novo Filme</h2>
+                <form id="add-movie-form" class="content-form">
+                    <input type="hidden" id="movie-id">
+                    <input type="text" id="movie-title" placeholder="Título do Filme" required>
+                    <textarea id="movie-description" placeholder="Descrição do Filme" required></textarea>
+                    <input type="url" id="movie-thumbnail" placeholder="URL da Thumbnail (imagem)" required>
+                    <input type="url" id="movie-url" placeholder="URL do Vídeo (Google Drive ou Bitchute)" required>
+                    <button type="submit" id="add-movie-btn">Adicionar Filme</button>
+                    <button type="button" id="cancel-edit-movie-btn" class="hidden" style="background-color: #555; margin-top: 10px;">Cancelar Edição</button>
+                </form>
+
+                <div class="existing-content-list">
+                    <h3>Filmes Adicionados</h3>
+                    <div class="search-container">
+                        <input type="search" id="admin-movie-search-input" placeholder="Pesquisar por nome do filme...">
+                    </div>
+                    <div id="existing-movies-list">
+                        <!-- Movies will be listed here by admin.js -->
+                    </div>
+                </div>
+            </section>
+
+            <section id="add-series" class="admin-section hidden">
+                <h2>Adicionar Nova Série</h2>
+                <form id="add-series-form" class="content-form">
+                     <input type="hidden" id="series-id">
+                     <input type="text" id="series-title" placeholder="Título da Série" required>
+                    <textarea id="series-description" placeholder="Descrição da Série" required></textarea>
+                    <input type="url" id="series-thumbnail" placeholder="URL da Thumbnail (imagem)" required>
+                    <button type="submit" id="add-series-btn">Salvar Série e Adicionar Temporadas</button>
+                    <button type="button" id="cancel-edit-series-btn" class="hidden" style="background-color: #555; margin-top: 10px;">Cancelar Edição</button>
+                </form>
+                <div id="seasons-episodes-section" class="hidden">
+                    <h3 id="current-series-title"></h3>
+                    <div id="seasons-container"></div>
+                    <button id="add-season-btn">Adicionar Temporada</button>
+                    <button id="finish-series-btn" class="publish-btn hidden" style="margin-top: 20px;">Concluir e Preparar para Publicar</button>
+                </div>
+
+                <div class="existing-content-list">
+                    <h3>Séries Adicionadas</h3>
+                    <div class="search-container">
+                        <input type="search" id="admin-series-search-input" placeholder="Pesquisar por nome da série...">
+                    </div>
+                    <div id="existing-series-list">
+                        <!-- Series will be listed here by admin.js -->
+                    </div>
+                </div>
+            </section>
+
+            <section id="message-box" class="admin-section hidden">
+                <h2>Caixa de Mensagens (Pedidos)</h2>
+                <p>Pedidos de filmes e séries, ordenados por popularidade.</p>
+                <div id="requests-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="info-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3>Adicionar/Editar Informações</h3>
+            <form id="info-form">
+                <input type="hidden" id="info-code-id">
+                <textarea id="info-description" placeholder="Descrição" required></textarea>
+                <input type="text" id="info-name" placeholder="Nome (opcional)">
+                <input type="text" id="info-whatsapp" placeholder="Whatsapp (opcional)">
+                <input type="text" id="info-telegram" placeholder="Telegram (opcional)">
+                <input type="text" id="info-instagram" placeholder="Instagram (opcional)">
+                <div class="form-actions">
+                    <button type="button" id="cancel-info-btn" class="cancel-btn">Cancelar</button>
+                    <button type="submit">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="admin.js"></script>
+</body>
+</html>
